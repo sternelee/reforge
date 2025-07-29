@@ -4,7 +4,8 @@
       "Bash(rg:*)",
       "Bash(mkdir:*)",
       "Bash(cargo check:*)",
-      "Bash(cargo:*)"
+      "Bash(cargo:*)",
+      "WebFetch(domain:docs.rs)"
     ],
     "deny": []
   }

@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use forge_domain::ConversationId;
 use tokio::sync::{mpsc, RwLock};
 use tracing::{debug, error, info, warn};
 
-use forge_app::Services;
+use forge_app::{Services, ShellService};
 use crate::{ForgeIrohNode, P2PMessage};
 
 /// P2P message handler that integrates with forge runtime
@@ -65,7 +64,9 @@ impl<S: Services> P2PMessageHandler<S> {
 
                 // Execute the command through shell service
                 let shell_service = services.shell_service();
-                match shell_service.run(command.clone(), None).await {
+                let cwd = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
+                
+                match shell_service.execute(command.clone(), cwd, false).await {
                     Ok(output) => {
                         info!("P2P command executed successfully: {}", output.output.combined_output());
                         // TODO: Optionally send result back to P2P network
