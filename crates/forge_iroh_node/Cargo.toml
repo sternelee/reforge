@@ -13,8 +13,8 @@ tracing.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
-iroh = "0.30.0"
-iroh-gossip = "0.30.0"
+iroh = "0.28.0"
+iroh-gossip = "0.28.0"
 rand = "0.8"
 derive_more.workspace = true
 forge_app = { path = "../forge_app" }

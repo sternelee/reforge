@@ -74,6 +74,56 @@ impl ForgeIrohNode {
         self.endpoint.as_ref().map(|e| e.node_id())
     }
 
+    /// Get node address information
+    pub async fn node_addr(&self) -> Option<String> {
+        if let Some(endpoint) = &self.endpoint {
+            let node_id = endpoint.node_id();
+            // Get direct addresses if available
+            let addrs = endpoint.direct_addresses().await.ok()?;
+            if !addrs.is_empty() {
+                Some(format!("{}@{}", node_id, addrs.iter().next().unwrap()))
+            } else {
+                Some(format!("{}", node_id))
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Print node information to console
+    pub async fn print_node_info(&self) {
+        if let Some(node_id) = self.node_id().await {
+            println!("🌐 Iroh P2P Node Started");
+            println!("   Node ID: {}", node_id);
+            
+            if let Some(endpoint) = &self.endpoint {
+                match endpoint.direct_addresses().await {
+                    Ok(addrs) if !addrs.is_empty() => {
+                        println!("   Direct Addresses:");
+                        for addr in addrs.iter().take(3) { // Show up to 3 addresses
+                            println!("     - {}", addr);
+                        }
+                    }
+                    _ => {
+                        println!("   Addresses: Relay-only connection");
+                    }
+                }
+                
+                // Show relay information if available
+                println!("   Discovery: n0 (iroh default)");
+            }
+            
+            let topics = self.list_topics().await;
+            if !topics.is_empty() {
+                println!("   Active Topics:");
+                for (_, topic_name) in topics.iter().take(5) {
+                    println!("     - {}", topic_name);
+                }
+            }
+            println!();
+        }
+    }
+
     /// Join a gossip topic
     pub async fn join_topic(&self, topic_name: &str) -> Result<TopicId> {
         let gossip = self.gossip.as_ref().ok_or(IrohNodeError::NodeNotRunning)?;

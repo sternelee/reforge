@@ -12,12 +12,14 @@ use forge_api::{
 use forge_display::{MarkdownFormat, TitleFormat};
 use forge_domain::{McpConfig, McpServerConfig, Provider, Scope};
 use forge_fs::ForgeFS;
+use forge_iroh_node::{ForgeIrohNode, IrohConfig};
 use forge_spinner::SpinnerManager;
 use forge_tracker::ToolCallPayload;
 use merge::Merge;
 use serde::Deserialize;
 use serde_json::Value;
 use tokio_stream::StreamExt;
+use whoami;
 
 use crate::cli::{Cli, McpCommand, TopLevelCommand, Transport};
 use crate::info::Info;
@@ -59,6 +61,7 @@ pub struct UI<A, F: Fn() -> A> {
     command: Arc<ForgeCommandManager>,
     cli: Cli,
     spinner: SpinnerManager,
+    iroh_node: Option<ForgeIrohNode>,
     #[allow(dead_code)] // The guard is kept alive by being held in the struct
     _guard: forge_tracker::Guard,
 }
@@ -156,6 +159,7 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
             command,
             spinner: SpinnerManager::new(),
             markdown: MarkdownFormat::new(),
+            iroh_node: None,
             _guard: forge_tracker::init_tracing(env.log_path(), TRACKER.clone())?,
         })
     }
@@ -610,6 +614,9 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
         let mut base_workflow = Workflow::default();
         base_workflow.merge(workflow.clone());
         if first {
+            // Initialize iroh node on first startup
+            self.init_iroh_node().await;
+            
             // only call on_update if this is the first initialization
             on_update(self.api.clone(), base_workflow.updates.as_ref()).await;
         }
@@ -621,6 +628,57 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
         self.state = UIState::new(self.api.environment(), base_workflow).provider(provider);
 
         Ok(workflow)
+    }
+
+    /// Initialize iroh P2P node
+    async fn init_iroh_node(&mut self) {
+        // Create iroh config - enable by default for now
+        let config = IrohConfig::new()
+            .enabled(true)
+            .with_topics(vec!["forge-general".to_string()])
+            .with_name(format!("forge-{}", whoami::username()))
+            .auto_execute(false); // Disable auto-execute for security
+
+        // Validate config
+        if let Err(e) = config.validate() {
+            self.writeln(TitleFormat::error(format!("Iroh config validation failed: {}", e))).ok();
+            return;
+        }
+
+        // Only proceed if enabled
+        if !config.enabled {
+            return;
+        }
+
+        // Create and initialize node
+        let (mut node, _message_rx) = ForgeIrohNode::new();
+        
+        match node.init().await {
+            Ok(_) => {
+                // Print node information
+                node.print_node_info().await;
+                
+                // Join default topics
+                for topic in &config.default_topics {
+                    match node.join_topic(topic).await {
+                        Ok(_) => {
+                            self.writeln(format!("📡 Joined P2P topic: {}", topic)).ok();
+                        }
+                        Err(e) => {
+                            self.writeln(TitleFormat::error(format!("Failed to join topic '{}': {}", topic, e))).ok();
+                        }
+                    }
+                }
+                
+                // Store the node
+                self.iroh_node = Some(node);
+                
+                self.writeln("✅ Iroh P2P node initialized successfully").ok();
+            }
+            Err(e) => {
+                self.writeln(TitleFormat::error(format!("Failed to initialize iroh node: {}", e))).ok();
+            }
+        }
     }
     async fn init_provider(&mut self) -> Result<Provider> {
         match self.api.provider().await {
