@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use anyhow::Result;
-use tokio::sync::{mpsc, RwLock};
+use tokio::sync::{RwLock, mpsc};
 use tracing::{debug, error, info, warn};
 
-use forge_app::{Services, ShellService};
 use crate::{ForgeIrohNode, P2PMessage};
+use forge_app::{Services, ShellService};
 
 /// P2P message handler that integrates with forge runtime
 pub struct P2PMessageHandler<S> {
@@ -59,16 +59,19 @@ impl<S: Services> P2PMessageHandler<S> {
     /// Process a P2P message and forward it to forge
     async fn process_message(services: &Arc<S>, message: P2PMessage) -> Result<()> {
         match message {
-            P2PMessage::Command { command, sender, timestamp } => {
+            P2PMessage::Command { command, sender, timestamp: _ } => {
                 info!("Received P2P command from {}: {}", sender, command);
 
                 // Execute the command through shell service
                 let shell_service = services.shell_service();
                 let cwd = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("."));
-                
+
                 match shell_service.execute(command.clone(), cwd, false).await {
                     Ok(output) => {
-                        info!("P2P command executed successfully: {}", output.output.combined_output());
+                        info!(
+                            "P2P command executed successfully: stdout: {}, stderr: {}",
+                            output.output.stdout, output.output.stderr
+                        );
                         // TODO: Optionally send result back to P2P network
                     }
                     Err(e) => {
@@ -76,14 +79,17 @@ impl<S: Services> P2PMessageHandler<S> {
                     }
                 }
             }
-            P2PMessage::Chat { message, sender, timestamp } => {
+            P2PMessage::Chat { message, sender, timestamp: _ } => {
                 info!("Received P2P chat message from {}: {}", sender, message);
 
                 // For chat messages, we could create a new conversation or add to existing one
                 // This is a simplified implementation - you might want to expand this
-                debug!("Chat message logged from P2P network: {} ({})", message, sender);
+                debug!(
+                    "Chat message logged from P2P network: {} ({})",
+                    message, sender
+                );
             }
-            P2PMessage::Status { status, node_id, timestamp } => {
+            P2PMessage::Status { status, node_id, timestamp: _ } => {
                 debug!("Received P2P status update from {}: {}", node_id, status);
             }
         }
@@ -109,7 +115,12 @@ impl<S: Services> P2PMessageHandler<S> {
     }
 
     /// Send a command through P2P
-    pub async fn send_p2p_command(&self, topic_name: &str, command: &str, sender: &str) -> Result<()> {
+    pub async fn send_p2p_command(
+        &self,
+        topic_name: &str,
+        command: &str,
+        sender: &str,
+    ) -> Result<()> {
         let node_guard = self.node.read().await;
         if let Some(ref node) = node_guard.as_ref() {
             // Find topic ID by name

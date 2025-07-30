@@ -65,4 +65,3 @@ impl P2PMessage {
         Ok(serde_json::from_slice(bytes)?)
     }
 }
-
