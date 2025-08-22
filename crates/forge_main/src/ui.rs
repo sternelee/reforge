@@ -516,6 +516,44 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
     /// Returns Some(ModelId) if a model was selected, or None if selection was
     /// canceled
     async fn select_model(&mut self) -> Result<Option<ModelId>> {
+        // Show current provider info
+        if let Some(provider) = &self.state.provider {
+            let provider_name = if provider.is_open_ai() {
+                "OpenAI"
+            } else if provider.is_anthropic() {
+                "Anthropic"
+            } else if provider.is_forge() {
+                "Forge"
+            } else if provider.is_open_router() {
+                "OpenRouter"
+            } else if provider.is_requesty() {
+                "Requesty"
+            } else if provider.is_xai() {
+                "xAI"
+            } else if provider.is_zai() {
+                "z.ai"
+            } else if provider.is_vercel() {
+                "Vercel"
+            } else if provider.is_deepseek() {
+                "DeepSeek"
+            } else if provider.is_qwen() {
+                "Qwen"
+            } else if provider.is_doubao() {
+                "Doubao"
+            } else if provider.is_chatglm() {
+                "ChatGLM"
+            } else if provider.is_moonshot() {
+                "Moonshot"
+            } else {
+                "Unknown"
+            };
+
+            self.writeln_title(TitleFormat::info(format!(
+                "Loading models from {} provider...",
+                provider_name
+            )))?;
+        }
+
         // Fetch available models
         let mut models = self
             .get_models()
@@ -523,6 +561,13 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
             .into_iter()
             .map(CliModel)
             .collect::<Vec<_>>();
+
+        if models.is_empty() {
+            self.writeln_title(TitleFormat::error(
+                "No models available for the current provider. Please check your API key and provider configuration."
+            ))?;
+            return Ok(None);
+        }
 
         // Sort the models by their names in ascending order
         models.sort_by(|a, b| a.0.name.cmp(&b.0.name));
@@ -717,23 +762,23 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
         };
 
         // Display information about the selected provider
-        self.writeln(TitleFormat::action(format!(
+        self.writeln_title(TitleFormat::action(format!(
             "Selected provider: {}",
             selected_provider.name
         )))?;
 
-        self.writeln(TitleFormat::info(format!(
+        self.writeln_title(TitleFormat::info(format!(
             "To use this provider, set the environment variable: {}",
             selected_provider.env_var.yellow()
         )))?;
 
-        self.writeln(TitleFormat::info(
+        self.writeln_title(TitleFormat::info(
             "The provider will be automatically used when the corresponding environment variable is set."
         ))?;
 
         // Optionally, we could also check if the environment variable is already set
         if std::env::var(&selected_provider.env_var).is_ok() {
-            self.writeln(TitleFormat::info(format!(
+            self.writeln_title(TitleFormat::info(format!(
                 "✓ {} is already set in your environment",
                 selected_provider.env_var
             )))?;
@@ -742,22 +787,27 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
             match self.init_provider().await {
                 Ok(provider) => {
                     self.state.provider = Some(provider.clone());
-                    self.writeln(TitleFormat::action("Provider updated successfully!"))?;
+                    // Reinitialize API with the new provider
+                    self.api = Arc::new((self.new_api)());
+                    self.writeln_title(TitleFormat::action("Provider updated successfully!"))?;
+                    self.writeln_title(TitleFormat::info(
+                        "You can now use /model to select models from this provider.",
+                    ))?;
                 }
                 Err(e) => {
-                    self.writeln(TitleFormat::error(format!(
+                    self.writeln_title(TitleFormat::error(format!(
                         "Warning: Could not initialize provider: {}",
                         e
                     )))?;
                 }
             }
         } else {
-            self.writeln(TitleFormat::info(format!(
+            self.writeln_title(TitleFormat::info(format!(
                 "⚠ {} is not set in your environment",
                 selected_provider.env_var
             )))?;
 
-            self.writeln(TitleFormat::info(
+            self.writeln_title(TitleFormat::info(
                 "Set your API key and restart Forge to use this provider.",
             ))?;
         }
