@@ -1731,12 +1731,14 @@ name = "forge_desktop"
 version = "0.1.0"
 dependencies = [
  "forge_api",
+ "forge_domain",
  "forge_infra",
  "forge_services",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
+ "tokio-stream",
 ]
 
 [[package]]

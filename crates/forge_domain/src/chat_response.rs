@@ -1,10 +1,12 @@
 use std::time::Duration;
 
 use crate::{Metrics, ToolCallFull, ToolResult, Usage};
+use serde::Serialize;
 
 /// Events that are emitted by the agent for external consumption. This includes
 /// events for all internal state changes.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
+#[serde(tag = "type", content = "data")]
 pub enum ChatResponse {
     TaskMessage { text: String, is_md: bool },
     TaskReasoning { content: String },
@@ -16,13 +18,13 @@ pub enum ChatResponse {
     Interrupt { reason: InterruptionReason },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub enum InterruptionReason {
     MaxToolFailurePerTurnLimitReached { limit: u64 },
     MaxRequestPerTurnLimitReached { limit: u64 },
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize)]
 pub struct Cause(String);
 
 impl Cause {
