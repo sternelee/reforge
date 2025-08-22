@@ -172,7 +172,7 @@ impl Provider {
     pub const FORGE_URL: &str = "https://antinomy.ai/api/v1/";
     pub const ZAI_URL: &str = "https://api.z.ai/api/paas/v4/";
     pub const CEREBRAS_URL: &str = "https://api.cerebras.ai/v1/";
-    pub const VERCEL_URL: &str = "https://ai-gateway.vercel.sh/v1/ai/";
+    pub const VERCEL_URL: &str = "https://ai-gateway.vercel.sh/v1/";
     pub const DEEPSEEK_URL: &str = "https://api.deepseek.com/v1/";
     pub const QWEN_URL: &str = "https://dashscope.aliyuncs.com/compatible-mode/v1/";
     pub const DOUBAO_URL: &str = "https://ark.cn-beijing.volces.com/api/v3/";

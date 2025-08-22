@@ -767,34 +767,39 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
             selected_provider.name
         )))?;
 
-        self.writeln_title(TitleFormat::info(format!(
-            "To use this provider, set the environment variable: {}",
-            selected_provider.env_var.yellow()
-        )))?;
-
-        self.writeln_title(TitleFormat::info(
-            "The provider will be automatically used when the corresponding environment variable is set."
-        ))?;
-
-        // Optionally, we could also check if the environment variable is already set
+        // Check if the environment variable is already set
         if std::env::var(&selected_provider.env_var).is_ok() {
             self.writeln_title(TitleFormat::info(format!(
                 "✓ {} is already set in your environment",
                 selected_provider.env_var
             )))?;
 
-            // Try to reinitialize the provider to use the new one
-            match self.init_provider().await {
+            // Set FORGE_PROVIDER to override provider selection
+            unsafe {
+                std::env::set_var("FORGE_PROVIDER", &selected_provider.name.to_uppercase());
+            }
+
+            // Reinitialize API with the new provider
+            self.api = Arc::new((self.new_api)());
+
+            // Clear conversation state to force reinitialization with new provider
+            self.state.conversation_id = None;
+            self.state.model = None;
+
+            // Try to get the new provider to verify it worked
+            match self.api.provider().await {
                 Ok(provider) => {
                     self.state.provider = Some(provider.clone());
-                    // Reinitialize API with the new provider
-                    self.api = Arc::new((self.new_api)());
-                    self.writeln_title(TitleFormat::action("Provider updated successfully!"))?;
+                    self.writeln_title(TitleFormat::action("Provider switched successfully!"))?;
                     self.writeln_title(TitleFormat::info(
                         "You can now use /model to select models from this provider.",
                     ))?;
                 }
                 Err(e) => {
+                    // Remove the FORGE_PROVIDER if it failed
+                    unsafe {
+                        std::env::remove_var("FORGE_PROVIDER");
+                    }
                     self.writeln_title(TitleFormat::error(format!(
                         "Warning: Could not initialize provider: {}",
                         e
@@ -805,6 +810,11 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
             self.writeln_title(TitleFormat::info(format!(
                 "⚠ {} is not set in your environment",
                 selected_provider.env_var
+            )))?;
+
+            self.writeln_title(TitleFormat::info(format!(
+                "To use this provider, set the environment variable: {}",
+                selected_provider.env_var.yellow()
             )))?;
 
             self.writeln_title(TitleFormat::info(

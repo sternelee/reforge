@@ -61,6 +61,53 @@ fn resolve_env_provider<F: EnvironmentInfra>(
     url: Option<ProviderUrl>,
     env: &F,
 ) -> Option<Provider> {
+    // Check if a specific provider is requested via FORGE_PROVIDER
+    if let Some(requested_provider) = env.get_env_var("FORGE_PROVIDER") {
+        let provider_name = requested_provider.to_uppercase();
+
+        // Map of provider names to their environment variables and constructor functions
+        let provider_map: Vec<(&str, &str, Box<dyn FnOnce(&str) -> Provider>)> = vec![
+            (
+                "OPENROUTER",
+                "OPENROUTER_API_KEY",
+                Box::new(Provider::open_router),
+            ),
+            ("REQUESTY", "REQUESTY_API_KEY", Box::new(Provider::requesty)),
+            ("XAI", "XAI_API_KEY", Box::new(Provider::xai)),
+            ("OPENAI", "OPENAI_API_KEY", Box::new(Provider::openai)),
+            (
+                "ANTHROPIC",
+                "ANTHROPIC_API_KEY",
+                Box::new(Provider::anthropic),
+            ),
+            ("CEREBRAS", "CEREBRAS_API_KEY", Box::new(Provider::cerebras)),
+            ("ZAI", "ZAI_API_KEY", Box::new(Provider::zai)),
+            ("VERCEL", "VERCEL_API_KEY", Box::new(Provider::vercel)),
+            ("DEEPSEEK", "DEEPSEEK_API_KEY", Box::new(Provider::deepseek)),
+            ("QWEN", "DASHSCOPE_API_KEY", Box::new(Provider::qwen)),
+            ("DOUBAO", "DOUBAO_API_KEY", Box::new(Provider::doubao)),
+            ("CHATGLM", "CHATGLM_API_KEY", Box::new(Provider::chatglm)),
+            ("MOONSHOT", "MOONSHOT_API_KEY", Box::new(Provider::moonshot)),
+        ];
+
+        // Try to find the requested provider
+        for (name, env_var, constructor) in provider_map {
+            if provider_name == name {
+                if let Some(api_key) = env.get_env_var(env_var) {
+                    let provider = constructor(&api_key);
+                    return Some(override_url(provider, url));
+                } else {
+                    // Requested provider found but no API key set
+                    return None;
+                }
+            }
+        }
+
+        // If we get here, the requested provider is not recognized
+        return None;
+    }
+
+    // Fall back to the original behavior when no specific provider is requested
     let keys: [ProviderSearch; 13] = [
         // ("FORGE_KEY", Box::new(Provider::forge)),
         ("OPENROUTER_API_KEY", Box::new(Provider::open_router)),
