@@ -39,7 +39,7 @@ impl Transformer for ProviderPipeline<'_> {
 
 /// function checks if provider supports open-router parameters.
 fn supports_open_router_params(provider: &Provider) -> bool {
-    provider.is_open_router() || provider.is_forge()
+    provider.is_open_router() || provider.is_forge() || provider.is_vercel()
 }
 
 #[cfg(test)]
@@ -52,6 +52,7 @@ mod tests {
         assert!(supports_open_router_params(&Provider::open_router(
             "open-router"
         )));
+        assert!(supports_open_router_params(&Provider::vercel("vercel")));
 
         assert!(!supports_open_router_params(&Provider::openai("openai")));
         assert!(!supports_open_router_params(&Provider::requesty(

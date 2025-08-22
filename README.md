@@ -195,6 +195,18 @@ _No changes in `forge.yaml` required_
 </details>
 
 <details>
+<summary><strong>Vercel AI Gateway</strong></summary>
+
+```bash
+# .env
+VERCEL_API_KEY=<your_vercel_api_key>
+```
+
+_No changes in `forge.yaml` required_
+
+</details>
+
+<details>
 <summary><strong>x-ai</strong></summary>
 
 ```bash

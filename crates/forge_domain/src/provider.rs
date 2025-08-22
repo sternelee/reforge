@@ -106,6 +106,13 @@ impl Provider {
         }
     }
 
+    pub fn vercel(key: &str) -> Provider {
+        Provider::OpenAI {
+            url: Url::parse(Provider::VERCEL_URL).unwrap(),
+            key: Some(key.into()),
+        }
+    }
+
     pub fn key(&self) -> Option<&str> {
         match self {
             Provider::OpenAI { key, .. } => key.as_deref(),
@@ -122,6 +129,7 @@ impl Provider {
     pub const ANTHROPIC_URL: &str = "https://api.anthropic.com/v1/";
     pub const FORGE_URL: &str = "https://antinomy.ai/api/v1/";
     pub const ZAI_URL: &str = "https://api.z.ai/api/paas/v4/";
+    pub const VERCEL_URL: &str = "https://ai-gateway.vercel.sh/v1/ai/";
 
     /// Converts the provider to it's base URL
     pub fn to_base_url(&self) -> Url {
@@ -177,6 +185,13 @@ impl Provider {
         match self {
             Provider::OpenAI { .. } => false,
             Provider::Anthropic { url, .. } => url.as_str().starts_with(Self::ANTHROPIC_URL),
+        }
+    }
+
+    pub fn is_vercel(&self) -> bool {
+        match self {
+            Provider::OpenAI { url, .. } => url.as_str().starts_with(Self::VERCEL_URL),
+            Provider::Anthropic { .. } => false,
         }
     }
 }
