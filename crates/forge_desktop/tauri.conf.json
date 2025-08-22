@@ -1,0 +1,24 @@
+{
+  "build": {
+    "beforeDevCommand": "npm start --prefix frontend",
+    "beforeBuildCommand": "npm run build --prefix frontend",
+    "devUrl": "http://localhost:3000",
+    "frontendDist": "./frontend/build"
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all"
+  },
+  "identifier": "com.tauri.dev",
+  "productName": "forge-desktop",
+  "version": "0.1.0",
+  "app": {
+    "windows": [
+      {
+        "title": "Forge Desktop",
+        "width": 800,
+        "height": 600
+      }
+    ]
+  }
+}
