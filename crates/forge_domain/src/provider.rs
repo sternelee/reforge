@@ -113,6 +113,41 @@ impl Provider {
         }
     }
 
+    pub fn deepseek(key: &str) -> Provider {
+        Provider::OpenAI {
+            url: Url::parse(Provider::DEEPSEEK_URL).unwrap(),
+            key: Some(key.into()),
+        }
+    }
+
+    pub fn qwen(key: &str) -> Provider {
+        Provider::OpenAI {
+            url: Url::parse(Provider::QWEN_URL).unwrap(),
+            key: Some(key.into()),
+        }
+    }
+
+    pub fn doubao(key: &str) -> Provider {
+        Provider::OpenAI {
+            url: Url::parse(Provider::DOUBAO_URL).unwrap(),
+            key: Some(key.into()),
+        }
+    }
+
+    pub fn chatglm(key: &str) -> Provider {
+        Provider::OpenAI {
+            url: Url::parse(Provider::CHATGLM_URL).unwrap(),
+            key: Some(key.into()),
+        }
+    }
+
+    pub fn moonshot(key: &str) -> Provider {
+        Provider::OpenAI {
+            url: Url::parse(Provider::MOONSHOT_URL).unwrap(),
+            key: Some(key.into()),
+        }
+    }
+
     pub fn key(&self) -> Option<&str> {
         match self {
             Provider::OpenAI { key, .. } => key.as_deref(),
@@ -130,6 +165,11 @@ impl Provider {
     pub const FORGE_URL: &str = "https://antinomy.ai/api/v1/";
     pub const ZAI_URL: &str = "https://api.z.ai/api/paas/v4/";
     pub const VERCEL_URL: &str = "https://ai-gateway.vercel.sh/v1/ai/";
+    pub const DEEPSEEK_URL: &str = "https://api.deepseek.com/v1/";
+    pub const QWEN_URL: &str = "https://dashscope.aliyuncs.com/compatible-mode/v1/";
+    pub const DOUBAO_URL: &str = "https://ark.cn-beijing.volces.com/api/v3/";
+    pub const CHATGLM_URL: &str = "https://open.bigmodel.cn/api/paas/v4/";
+    pub const MOONSHOT_URL: &str = "https://api.moonshot.cn/v1/";
 
     /// Converts the provider to it's base URL
     pub fn to_base_url(&self) -> Url {
@@ -191,6 +231,41 @@ impl Provider {
     pub fn is_vercel(&self) -> bool {
         match self {
             Provider::OpenAI { url, .. } => url.as_str().starts_with(Self::VERCEL_URL),
+            Provider::Anthropic { .. } => false,
+        }
+    }
+
+    pub fn is_deepseek(&self) -> bool {
+        match self {
+            Provider::OpenAI { url, .. } => url.as_str().starts_with(Self::DEEPSEEK_URL),
+            Provider::Anthropic { .. } => false,
+        }
+    }
+
+    pub fn is_qwen(&self) -> bool {
+        match self {
+            Provider::OpenAI { url, .. } => url.as_str().starts_with(Self::QWEN_URL),
+            Provider::Anthropic { .. } => false,
+        }
+    }
+
+    pub fn is_doubao(&self) -> bool {
+        match self {
+            Provider::OpenAI { url, .. } => url.as_str().starts_with(Self::DOUBAO_URL),
+            Provider::Anthropic { .. } => false,
+        }
+    }
+
+    pub fn is_chatglm(&self) -> bool {
+        match self {
+            Provider::OpenAI { url, .. } => url.as_str().starts_with(Self::CHATGLM_URL),
+            Provider::Anthropic { .. } => false,
+        }
+    }
+
+    pub fn is_moonshot(&self) -> bool {
+        match self {
+            Provider::OpenAI { url, .. } => url.as_str().starts_with(Self::MOONSHOT_URL),
             Provider::Anthropic { .. } => false,
         }
     }
