@@ -485,6 +485,9 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 self.spinner.start(None)?;
                 self.on_message(None).await?;
             }
+            Command::Provider => {
+                self.on_provider_selection().await?;
+            }
         }
 
         Ok(false)
@@ -535,6 +538,129 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
         }
     }
 
+    /// Get list of available providers with their configuration details
+    fn get_available_providers(&self) -> Vec<CliProvider> {
+        vec![
+            CliProvider::new(
+                "Forge".to_string(),
+                "Antinomy Forge provider".to_string(),
+                "FORGE_API_KEY".to_string(),
+            ),
+            CliProvider::new(
+                "OpenAI".to_string(),
+                "OpenAI provider".to_string(),
+                "OPENAI_API_KEY".to_string(),
+            ),
+            CliProvider::new(
+                "Anthropic".to_string(),
+                "Anthropic Claude provider".to_string(),
+                "ANTHROPIC_API_KEY".to_string(),
+            ),
+            CliProvider::new(
+                "OpenRouter".to_string(),
+                "OpenRouter proxy service".to_string(),
+                "OPENROUTER_API_KEY".to_string(),
+            ),
+            CliProvider::new(
+                "Requesty".to_string(),
+                "Requesty AI router".to_string(),
+                "REQUESTY_API_KEY".to_string(),
+            ),
+            CliProvider::new(
+                "xAI".to_string(),
+                "xAI Grok provider".to_string(),
+                "XAI_API_KEY".to_string(),
+            ),
+            CliProvider::new(
+                "z.ai".to_string(),
+                "z.ai provider".to_string(),
+                "ZAI_API_KEY".to_string(),
+            ),
+            CliProvider::new(
+                "Vercel".to_string(),
+                "Vercel AI SDK".to_string(),
+                "VERCEL_API_KEY".to_string(),
+            ),
+            CliProvider::new(
+                "DeepSeek".to_string(),
+                "DeepSeek provider".to_string(),
+                "DEEPSEEK_API_KEY".to_string(),
+            ),
+            CliProvider::new(
+                "Qwen".to_string(),
+                "Alibaba Qwen (DashScope)".to_string(),
+                "DASHSCOPE_API_KEY".to_string(),
+            ),
+            CliProvider::new(
+                "Doubao".to_string(),
+                "ByteDance Doubao provider".to_string(),
+                "DOUBAO_API_KEY".to_string(),
+            ),
+            CliProvider::new(
+                "ChatGLM".to_string(),
+                "Zhipu ChatGLM provider".to_string(),
+                "CHATGLM_API_KEY".to_string(),
+            ),
+            CliProvider::new(
+                "Moonshot".to_string(),
+                "Moonshot AI provider".to_string(),
+                "MOONSHOT_API_KEY".to_string(),
+            ),
+        ]
+    }
+
+    /// Select a provider from the available providers
+    /// Returns Some(CliProvider) if a provider was selected, or None if selection was canceled
+    async fn select_provider(&mut self) -> Result<Option<CliProvider>> {
+        let providers = self.get_available_providers();
+
+        // Find the index of the current provider if possible
+        let starting_cursor = if let Some(current_provider) = &self.state.provider {
+            if current_provider.is_open_ai() {
+                providers.iter().position(|p| p.name == "OpenAI")
+            } else if current_provider.is_anthropic() {
+                providers.iter().position(|p| p.name == "Anthropic")
+            } else if current_provider.is_forge() {
+                providers.iter().position(|p| p.name == "Forge")
+            } else if current_provider.is_open_router() {
+                providers.iter().position(|p| p.name == "OpenRouter")
+            } else if current_provider.is_requesty() {
+                providers.iter().position(|p| p.name == "Requesty")
+            } else if current_provider.is_xai() {
+                providers.iter().position(|p| p.name == "xAI")
+            } else if current_provider.is_zai() {
+                providers.iter().position(|p| p.name == "z.ai")
+            } else if current_provider.is_vercel() {
+                providers.iter().position(|p| p.name == "Vercel")
+            } else if current_provider.is_deepseek() {
+                providers.iter().position(|p| p.name == "DeepSeek")
+            } else if current_provider.is_qwen() {
+                providers.iter().position(|p| p.name == "Qwen")
+            } else if current_provider.is_doubao() {
+                providers.iter().position(|p| p.name == "Doubao")
+            } else if current_provider.is_chatglm() {
+                providers.iter().position(|p| p.name == "ChatGLM")
+            } else if current_provider.is_moonshot() {
+                providers.iter().position(|p| p.name == "Moonshot")
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+        .unwrap_or(0);
+
+        // Use the centralized select module
+        match ForgeSelect::select("Select a provider:", providers)
+            .with_starting_cursor(starting_cursor)
+            .with_help_message("Type a name or use arrow keys to navigate and Enter to select")
+            .prompt()?
+        {
+            Some(provider) => Ok(Some(provider)),
+            None => Ok(None),
+        }
+    }
+
     // Helper method to handle model selection and update the conversation
     async fn on_model_selection(&mut self) -> Result<()> {
         // Select a model
@@ -566,6 +692,66 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
             self.update_model(model.clone());
 
             self.writeln(TitleFormat::action(format!("Switched to model: {model}")))?;
+        }
+
+        Ok(())
+    }
+
+    // Helper method to handle provider selection and configuration
+    async fn on_provider_selection(&mut self) -> Result<()> {
+        // Select a provider
+        let provider_option = self.select_provider().await?;
+
+        // If no provider was selected (user canceled), return early
+        let selected_provider = match provider_option {
+            Some(provider) => provider,
+            None => return Ok(()),
+        };
+
+        // Display information about the selected provider
+        self.writeln(TitleFormat::action(format!(
+            "Selected provider: {}",
+            selected_provider.name
+        )))?;
+
+        self.writeln(TitleFormat::info(format!(
+            "To use this provider, set the environment variable: {}",
+            selected_provider.env_var.yellow()
+        )))?;
+
+        self.writeln(TitleFormat::info(
+            "The provider will be automatically used when the corresponding environment variable is set."
+        ))?;
+
+        // Optionally, we could also check if the environment variable is already set
+        if std::env::var(&selected_provider.env_var).is_ok() {
+            self.writeln(TitleFormat::info(format!(
+                "✓ {} is already set in your environment",
+                selected_provider.env_var
+            )))?;
+
+            // Try to reinitialize the provider to use the new one
+            match self.init_provider().await {
+                Ok(provider) => {
+                    self.state.provider = Some(provider.clone());
+                    self.writeln(TitleFormat::action("Provider updated successfully!"))?;
+                }
+                Err(e) => {
+                    self.writeln(TitleFormat::error(format!(
+                        "Warning: Could not initialize provider: {}",
+                        e
+                    )))?;
+                }
+            }
+        } else {
+            self.writeln(TitleFormat::info(format!(
+                "⚠ {} is not set in your environment",
+                selected_provider.env_var
+            )))?;
+
+            self.writeln(TitleFormat::info(
+                "Set your API key and restart Forge to use this provider.",
+            ))?;
         }
 
         Ok(())
@@ -927,6 +1113,32 @@ fn parse_env(env: Vec<String>) -> BTreeMap<String, String> {
 }
 
 struct CliModel(Model);
+
+#[derive(Debug, Clone)]
+struct CliProvider {
+    name: String,
+    description: String,
+    env_var: String,
+}
+
+impl CliProvider {
+    fn new(name: String, description: String, env_var: String) -> Self {
+        Self { name, description, env_var }
+    }
+}
+
+impl Display for CliProvider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name.bold())?;
+
+        if !self.description.is_empty() {
+            write!(f, " - {}", self.description.dimmed())?;
+        }
+
+        write!(f, " ({})", self.env_var.yellow())?;
+        Ok(())
+    }
+}
 
 impl Display for CliModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

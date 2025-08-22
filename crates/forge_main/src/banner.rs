@@ -14,6 +14,7 @@ pub fn display() -> io::Result<()> {
         ("Version:", VERSION),
         ("New conversation:", "/new"),
         ("Get started:", "/info, /usage, /help"),
+        ("Switch provider:", "/provider"),
         ("Switch model:", "/model"),
         ("Switch agent:", "/forge or /muse or /agent"),
         ("Update:", "/update"),
