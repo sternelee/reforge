@@ -231,18 +231,6 @@ _No changes in `forge.yaml` required_
 </details>
 
 <details>
-<summary><strong>Doubao (豆包)</strong></summary>
-
-```bash
-# .env
-DOUBAO_API_KEY=<your_doubao_api_key>
-```
-
-_No changes in `forge.yaml` required_
-
-</details>
-
-<details>
 <summary><strong>ChatGLM (智谱清言)</strong></summary>
 
 ```bash

@@ -90,7 +90,7 @@ impl<T: HttpClientService> Anthropic<T> {
             .http
             .get(&url, Some(create_headers(self.get_headers())))
             .await;
-            
+
         let response = match response {
             Ok(resp) => resp,
             Err(error) => {
@@ -101,10 +101,8 @@ impl<T: HttpClientService> Anthropic<T> {
 
         let status = response.status();
         let _ctx_msg = format_http_context(Some(status), "GET", &url);
-        let text = response
-            .text()
-            .await;
-            
+        let text = response.text().await;
+
         let text = match text {
             Ok(text) => text,
             Err(error) => {

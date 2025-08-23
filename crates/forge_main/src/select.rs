@@ -61,7 +61,7 @@ impl ForgeSelect {
         let mut text = Text::new(&message);
         text = text.with_render_config(Self::default_render_config());
         text = text.with_help_message("Type the model name and press Enter, or ESC to cancel");
-        
+
         Self::handle_inquire_error(text.prompt())
     }
 }

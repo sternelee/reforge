@@ -51,7 +51,7 @@ impl<F: EnvironmentInfra> ProviderRegistry for ForgeProviderRegistry<F> {
 
         let provider = self
             .get_provider(config)
-            .context("No valid provider configuration found. Please set one of the following environment variables: OPENROUTER_API_KEY, REQUESTY_API_KEY, XAI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, ZAI_API_KEY, VERCEL_API_KEY, DEEPSEEK_API_KEY, DASHSCOPE_API_KEY, DOUBAO_API_KEY, CHATGLM_API_KEY, or MOONSHOT_API_KEY. For more details, visit: https://forgecode.dev/docs/custom-providers/")?;
+            .context("No valid provider configuration found. Please set one of the following environment variables: OPENROUTER_API_KEY, REQUESTY_API_KEY, XAI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, ZAI_API_KEY, VERCEL_API_KEY, DEEPSEEK_API_KEY, DASHSCOPE_API_KEY, CHATGLM_API_KEY, or MOONSHOT_API_KEY. For more details, visit: https://forgecode.dev/docs/custom-providers/")?;
         self.cache.write().await.replace(provider.clone());
         Ok(provider)
     }
@@ -85,7 +85,6 @@ fn resolve_env_provider<F: EnvironmentInfra>(
             ("VERCEL", "VERCEL_API_KEY", Box::new(Provider::vercel)),
             ("DEEPSEEK", "DEEPSEEK_API_KEY", Box::new(Provider::deepseek)),
             ("QWEN", "DASHSCOPE_API_KEY", Box::new(Provider::qwen)),
-            ("DOUBAO", "DOUBAO_API_KEY", Box::new(Provider::doubao)),
             ("CHATGLM", "CHATGLM_API_KEY", Box::new(Provider::chatglm)),
             ("MOONSHOT", "MOONSHOT_API_KEY", Box::new(Provider::moonshot)),
         ];
@@ -120,7 +119,6 @@ fn resolve_env_provider<F: EnvironmentInfra>(
         ("VERCEL_API_KEY", Box::new(Provider::vercel)),
         ("DEEPSEEK_API_KEY", Box::new(Provider::deepseek)),
         ("DASHSCOPE_API_KEY", Box::new(Provider::qwen)),
-        ("DOUBAO_API_KEY", Box::new(Provider::doubao)),
         ("CHATGLM_API_KEY", Box::new(Provider::chatglm)),
         ("MOONSHOT_API_KEY", Box::new(Provider::moonshot)),
     ];

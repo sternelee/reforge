@@ -538,8 +538,6 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 "DeepSeek"
             } else if provider.is_qwen() {
                 "Qwen"
-            } else if provider.is_doubao() {
-                "Doubao"
             } else if provider.is_chatglm() {
                 "ChatGLM"
             } else if provider.is_moonshot() {
@@ -564,9 +562,9 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
 
         if models.is_empty() {
             self.writeln_title(TitleFormat::info(
-                "No models available from the provider. You can still enter a model name manually."
+                "No models available from the provider. You can still enter a model name manually.",
             ))?;
-            
+
             // If no models are available, directly prompt for text input
             return match ForgeSelect::text_input("Enter model name manually:")? {
                 Some(model_name) if !model_name.trim().is_empty() => {
@@ -586,7 +584,7 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
             supports_parallel_tool_calls: None,
             supports_reasoning: None,
         });
-        
+
         models.insert(0, manual_input_option);
 
         // Sort the models by their names in ascending order (except manual input at top)
@@ -679,11 +677,6 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 "DASHSCOPE_API_KEY".to_string(),
             ),
             CliProvider::new(
-                "Doubao".to_string(),
-                "ByteDance Doubao provider".to_string(),
-                "DOUBAO_API_KEY".to_string(),
-            ),
-            CliProvider::new(
                 "ChatGLM".to_string(),
                 "Zhipu ChatGLM provider".to_string(),
                 "CHATGLM_API_KEY".to_string(),
@@ -723,8 +716,6 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 providers.iter().position(|p| p.name == "DeepSeek")
             } else if current_provider.is_qwen() {
                 providers.iter().position(|p| p.name == "Qwen")
-            } else if current_provider.is_doubao() {
-                providers.iter().position(|p| p.name == "Doubao")
             } else if current_provider.is_chatglm() {
                 providers.iter().position(|p| p.name == "ChatGLM")
             } else if current_provider.is_moonshot() {

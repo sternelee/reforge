@@ -134,13 +134,6 @@ impl Provider {
         }
     }
 
-    pub fn doubao(key: &str) -> Provider {
-        Provider::OpenAI {
-            url: Url::parse(Provider::DOUBAO_URL).unwrap(),
-            key: Some(key.into()),
-        }
-    }
-
     pub fn chatglm(key: &str) -> Provider {
         Provider::OpenAI {
             url: Url::parse(Provider::CHATGLM_URL).unwrap(),
@@ -175,7 +168,6 @@ impl Provider {
     pub const VERCEL_URL: &str = "https://ai-gateway.vercel.sh/v1/";
     pub const DEEPSEEK_URL: &str = "https://api.deepseek.com/v1/";
     pub const QWEN_URL: &str = "https://dashscope.aliyuncs.com/compatible-mode/v1/";
-    pub const DOUBAO_URL: &str = "https://ark.cn-beijing.volces.com/api/v3/";
     pub const CHATGLM_URL: &str = "https://open.bigmodel.cn/api/paas/v4/";
     pub const MOONSHOT_URL: &str = "https://api.moonshot.cn/v1/";
 
@@ -260,13 +252,6 @@ impl Provider {
     pub fn is_qwen(&self) -> bool {
         match self {
             Provider::OpenAI { url, .. } => url.as_str().starts_with(Self::QWEN_URL),
-            Provider::Anthropic { .. } => false,
-        }
-    }
-
-    pub fn is_doubao(&self) -> bool {
-        match self {
-            Provider::OpenAI { url, .. } => url.as_str().starts_with(Self::DOUBAO_URL),
             Provider::Anthropic { .. } => false,
         }
     }
