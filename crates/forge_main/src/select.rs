@@ -1,6 +1,6 @@
 use anyhow::Result;
 use inquire::ui::{RenderConfig, Styled};
-use inquire::{Confirm, InquireError, Select};
+use inquire::{Confirm, InquireError, Select, Text};
 
 /// Centralized inquire select functionality with consistent error handling
 pub struct ForgeSelect;
@@ -53,6 +53,16 @@ impl ForgeSelect {
             default: None,
             help_message: None,
         }
+    }
+
+    /// Text input for manual entry
+    pub fn text_input(message: impl Into<String>) -> Result<Option<String>> {
+        let message = message.into();
+        let mut text = Text::new(&message);
+        text = text.with_render_config(Self::default_render_config());
+        text = text.with_help_message("Type the model name and press Enter, or ESC to cancel");
+        
+        Self::handle_inquire_error(text.prompt())
     }
 }
 

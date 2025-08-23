@@ -75,8 +75,8 @@ impl<H: HttpClientService> OpenAIProvider<H> {
         debug!(url = %url, "Fetching models");
         match self.fetch_models(url.as_str()).await {
             Err(error) => {
-                tracing::error!(error = ?error, "Failed to fetch models");
-                anyhow::bail!(error)
+                tracing::warn!(error = ?error, "Failed to fetch models, returning empty list");
+                Ok(Vec::new())
             }
             Ok(response) => {
                 let data: ListModelResponse = serde_json::from_str(&response)

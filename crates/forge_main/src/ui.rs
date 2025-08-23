@@ -563,14 +563,36 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
             .collect::<Vec<_>>();
 
         if models.is_empty() {
-            self.writeln_title(TitleFormat::error(
-                "No models available for the current provider. Please check your API key and provider configuration."
+            self.writeln_title(TitleFormat::info(
+                "No models available from the provider. You can still enter a model name manually."
             ))?;
-            return Ok(None);
+            
+            // If no models are available, directly prompt for text input
+            return match ForgeSelect::text_input("Enter model name manually:")? {
+                Some(model_name) if !model_name.trim().is_empty() => {
+                    Ok(Some(ModelId::new(model_name.trim())))
+                }
+                _ => Ok(None),
+            };
         }
 
-        // Sort the models by their names in ascending order
+        // Add manual input option to the list
+        let manual_input_option = CliModel(Model {
+            id: ModelId::new("__manual_input__"),
+            name: Some("💬 Enter model name manually...".to_string()),
+            description: Some("Type a custom model name".to_string()),
+            context_length: None,
+            tools_supported: None,
+            supports_parallel_tool_calls: None,
+            supports_reasoning: None,
+        });
+        
+        models.insert(0, manual_input_option);
+
+        // Sort the models by their names in ascending order (except manual input at top)
+        let manual_option = models.remove(0);
         models.sort_by(|a, b| a.0.name.cmp(&b.0.name));
+        models.insert(0, manual_option);
 
         // Find the index of the current model
         let starting_cursor = self
@@ -586,7 +608,19 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
             .with_help_message("Type a name or use arrow keys to navigate and Enter to select")
             .prompt()?
         {
-            Some(model) => Ok(Some(model.0.id)),
+            Some(model) => {
+                if model.0.id.as_str() == "__manual_input__" {
+                    // Handle manual input
+                    match ForgeSelect::text_input("Enter model name:")? {
+                        Some(model_name) if !model_name.trim().is_empty() => {
+                            Ok(Some(ModelId::new(model_name.trim())))
+                        }
+                        _ => Ok(None),
+                    }
+                } else {
+                    Ok(Some(model.0.id))
+                }
+            }
             None => Ok(None),
         }
     }

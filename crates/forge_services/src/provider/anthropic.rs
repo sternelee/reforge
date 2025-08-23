@@ -89,28 +89,41 @@ impl<T: HttpClientService> Anthropic<T> {
         let response = self
             .http
             .get(&url, Some(create_headers(self.get_headers())))
-            .await
-            .with_context(|| format_http_context(None, "GET", &url))
-            .with_context(|| "Failed to fetch models")?;
+            .await;
+            
+        let response = match response {
+            Ok(resp) => resp,
+            Err(error) => {
+                tracing::warn!(error = ?error, "Failed to fetch models, returning empty list");
+                return Ok(Vec::new());
+            }
+        };
 
         let status = response.status();
-        let ctx_msg = format_http_context(Some(status), "GET", &url);
+        let _ctx_msg = format_http_context(Some(status), "GET", &url);
         let text = response
             .text()
-            .await
-            .with_context(|| ctx_msg.clone())
-            .with_context(|| "Failed to decode response into text")?;
+            .await;
+            
+        let text = match text {
+            Ok(text) => text,
+            Err(error) => {
+                tracing::warn!(error = ?error, "Failed to decode response text, returning empty list");
+                return Ok(Vec::new());
+            }
+        };
 
         if status.is_success() {
-            let response: ListModelResponse = serde_json::from_str(&text)
-                .with_context(|| ctx_msg)
-                .with_context(|| "Failed to deserialize models response")?;
-            Ok(response.data.into_iter().map(Into::into).collect())
+            match serde_json::from_str::<ListModelResponse>(&text) {
+                Ok(response) => Ok(response.data.into_iter().map(Into::into).collect()),
+                Err(error) => {
+                    tracing::warn!(error = ?error, "Failed to deserialize models response, returning empty list");
+                    Ok(Vec::new())
+                }
+            }
         } else {
-            // treat non 200 response as error.
-            Err(anyhow::anyhow!(text))
-                .with_context(|| ctx_msg)
-                .with_context(|| "Failed to fetch the models")
+            tracing::warn!(status = %status, response = %text, "Non-success status when fetching models, returning empty list");
+            Ok(Vec::new())
         }
     }
 }
