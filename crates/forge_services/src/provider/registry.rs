@@ -107,7 +107,7 @@ fn resolve_env_provider<F: EnvironmentInfra>(
     }
 
     // Fall back to the original behavior when no specific provider is requested
-    let keys: [ProviderSearch; 13] = [
+    let keys: [ProviderSearch; 12] = [
         // ("FORGE_KEY", Box::new(Provider::forge)),
         ("OPENROUTER_API_KEY", Box::new(Provider::open_router)),
         ("REQUESTY_API_KEY", Box::new(Provider::requesty)),
