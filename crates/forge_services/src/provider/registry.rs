@@ -65,7 +65,8 @@ fn resolve_env_provider<F: EnvironmentInfra>(
     if let Some(requested_provider) = env.get_env_var("FORGE_PROVIDER") {
         let provider_name = requested_provider.to_uppercase();
 
-        // Map of provider names to their environment variables and constructor functions
+        // Map of provider names to their environment variables and constructor
+        // functions
         let provider_map: Vec<(&str, &str, Box<dyn FnOnce(&str) -> Provider>)> = vec![
             (
                 "OPENROUTER",

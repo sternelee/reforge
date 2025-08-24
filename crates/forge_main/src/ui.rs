@@ -587,7 +587,8 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
 
         models.insert(0, manual_input_option);
 
-        // Sort the models by their names in ascending order (except manual input at top)
+        // Sort the models by their names in ascending order (except manual input at
+        // top)
         let manual_option = models.remove(0);
         models.sort_by(|a, b| a.0.name.cmp(&b.0.name));
         models.insert(0, manual_option);
@@ -690,7 +691,8 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
     }
 
     /// Select a provider from the available providers
-    /// Returns Some(CliProvider) if a provider was selected, or None if selection was canceled
+    /// Returns Some(CliProvider) if a provider was selected, or None if
+    /// selection was canceled
     async fn select_provider(&mut self) -> Result<Option<CliProvider>> {
         let providers = self.get_available_providers();
 
@@ -801,7 +803,7 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
 
             // Set FORGE_PROVIDER to override provider selection
             unsafe {
-                std::env::set_var("FORGE_PROVIDER", &selected_provider.name.to_uppercase());
+                std::env::set_var("FORGE_PROVIDER", selected_provider.name.to_uppercase());
             }
 
             // Reinitialize API with the new provider
