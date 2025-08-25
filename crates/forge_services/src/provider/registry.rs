@@ -51,7 +51,7 @@ impl<F: EnvironmentInfra> ProviderRegistry for ForgeProviderRegistry<F> {
 
         let provider = self
             .get_provider(config)
-            .context("No valid provider configuration found. Please set one of the following environment variables: OPENROUTER_API_KEY, REQUESTY_API_KEY, XAI_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY. For more details, visit: https://forgecode.dev/docs/custom-providers/")?;
+            .context("No valid provider configuration found. Please set one of the following environment variables: OPENROUTER_API_KEY, REQUESTY_API_KEY, XAI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, ZAI_API_KEY, VERCEL_API_KEY, DEEPSEEK_API_KEY, DASHSCOPE_API_KEY, CHATGLM_API_KEY, or MOONSHOT_API_KEY. For more details, visit: https://forgecode.dev/docs/custom-providers/")?;
         self.cache.write().await.replace(provider.clone());
         Ok(provider)
     }
@@ -61,7 +61,53 @@ fn resolve_env_provider<F: EnvironmentInfra>(
     url: Option<ProviderUrl>,
     env: &F,
 ) -> Option<Provider> {
-    let keys: [ProviderSearch; 7] = [
+    // Check if a specific provider is requested via FORGE_PROVIDER
+    if let Some(requested_provider) = env.get_env_var("FORGE_PROVIDER") {
+        let provider_name = requested_provider.to_uppercase();
+
+        // Map of provider names to their environment variables and constructor functions
+        let provider_map: Vec<(&str, &str, Box<dyn FnOnce(&str) -> Provider>)> = vec![
+            (
+                "OPENROUTER",
+                "OPENROUTER_API_KEY",
+                Box::new(Provider::open_router),
+            ),
+            ("REQUESTY", "REQUESTY_API_KEY", Box::new(Provider::requesty)),
+            ("XAI", "XAI_API_KEY", Box::new(Provider::xai)),
+            ("OPENAI", "OPENAI_API_KEY", Box::new(Provider::openai)),
+            (
+                "ANTHROPIC",
+                "ANTHROPIC_API_KEY",
+                Box::new(Provider::anthropic),
+            ),
+            ("CEREBRAS", "CEREBRAS_API_KEY", Box::new(Provider::cerebras)),
+            ("ZAI", "ZAI_API_KEY", Box::new(Provider::zai)),
+            ("VERCEL", "VERCEL_API_KEY", Box::new(Provider::vercel)),
+            ("DEEPSEEK", "DEEPSEEK_API_KEY", Box::new(Provider::deepseek)),
+            ("QWEN", "DASHSCOPE_API_KEY", Box::new(Provider::qwen)),
+            ("CHATGLM", "CHATGLM_API_KEY", Box::new(Provider::chatglm)),
+            ("MOONSHOT", "MOONSHOT_API_KEY", Box::new(Provider::moonshot)),
+        ];
+
+        // Try to find the requested provider
+        for (name, env_var, constructor) in provider_map {
+            if provider_name == name {
+                if let Some(api_key) = env.get_env_var(env_var) {
+                    let provider = constructor(&api_key);
+                    return Some(override_url(provider, url));
+                } else {
+                    // Requested provider found but no API key set
+                    return None;
+                }
+            }
+        }
+
+        // If we get here, the requested provider is not recognized
+        return None;
+    }
+
+    // Fall back to the original behavior when no specific provider is requested
+    let keys: [ProviderSearch; 12] = [
         // ("FORGE_KEY", Box::new(Provider::forge)),
         ("OPENROUTER_API_KEY", Box::new(Provider::open_router)),
         ("REQUESTY_API_KEY", Box::new(Provider::requesty)),
@@ -70,6 +116,11 @@ fn resolve_env_provider<F: EnvironmentInfra>(
         ("ANTHROPIC_API_KEY", Box::new(Provider::anthropic)),
         ("CEREBRAS_API_KEY", Box::new(Provider::cerebras)),
         ("ZAI_API_KEY", Box::new(Provider::zai)),
+        ("VERCEL_API_KEY", Box::new(Provider::vercel)),
+        ("DEEPSEEK_API_KEY", Box::new(Provider::deepseek)),
+        ("DASHSCOPE_API_KEY", Box::new(Provider::qwen)),
+        ("CHATGLM_API_KEY", Box::new(Provider::chatglm)),
+        ("MOONSHOT_API_KEY", Box::new(Provider::moonshot)),
     ];
 
     keys.into_iter().find_map(|(key, fun)| {

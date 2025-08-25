@@ -195,6 +195,66 @@ _No changes in `forge.yaml` required_
 </details>
 
 <details>
+<summary><strong>Vercel AI Gateway</strong></summary>
+
+```bash
+# .env
+VERCEL_API_KEY=<your_vercel_api_key>
+```
+
+_No changes in `forge.yaml` required_
+
+</details>
+
+<details>
+<summary><strong>DeepSeek</strong></summary>
+
+```bash
+# .env
+DEEPSEEK_API_KEY=<your_deepseek_api_key>
+```
+
+_No changes in `forge.yaml` required_
+
+</details>
+
+<details>
+<summary><strong>Qwen (通义千问)</strong></summary>
+
+```bash
+# .env
+DASHSCOPE_API_KEY=<your_dashscope_api_key>
+```
+
+_No changes in `forge.yaml` required_
+
+</details>
+
+<details>
+<summary><strong>ChatGLM (智谱清言)</strong></summary>
+
+```bash
+# .env
+CHATGLM_API_KEY=<your_chatglm_api_key>
+```
+
+_No changes in `forge.yaml` required_
+
+</details>
+
+<details>
+<summary><strong>Moonshot (月之暗面)</strong></summary>
+
+```bash
+# .env
+MOONSHOT_API_KEY=<your_moonshot_api_key>
+```
+
+_No changes in `forge.yaml` required_
+
+</details>
+
+<details>
 <summary><strong>x-ai</strong></summary>
 
 ```bash
