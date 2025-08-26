@@ -49,6 +49,7 @@ fn supports_open_router_params(provider: &Provider) -> bool {
         || provider.is_qwen()
         || provider.is_chatglm()
         || provider.is_moonshot()
+        || provider.is_wisdom()
 }
 
 #[cfg(test)]

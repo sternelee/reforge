@@ -148,6 +148,13 @@ impl Provider {
         }
     }
 
+    pub fn wisdom(key: &str) -> Provider {
+        Provider::OpenAI {
+            url: Url::parse(Provider::WISDOM_URL).unwrap(),
+            key: Some(key.into()),
+        }
+    }
+
     pub fn key(&self) -> Option<&str> {
         match self {
             Provider::OpenAI { key, .. } => key.as_deref(),
@@ -170,6 +177,7 @@ impl Provider {
     pub const QWEN_URL: &str = "https://dashscope.aliyuncs.com/compatible-mode/v1/";
     pub const CHATGLM_URL: &str = "https://open.bigmodel.cn/api/paas/v4/";
     pub const MOONSHOT_URL: &str = "https://api.moonshot.cn/v1/";
+    pub const WISDOM_URL: &str = "https://wisdom-gate.juheapi.com/v1/";
 
     /// Converts the provider to it's base URL
     pub fn to_base_url(&self) -> Url {
@@ -266,6 +274,13 @@ impl Provider {
     pub fn is_moonshot(&self) -> bool {
         match self {
             Provider::OpenAI { url, .. } => url.as_str().starts_with(Self::MOONSHOT_URL),
+            Provider::Anthropic { .. } => false,
+        }
+    }
+
+    pub fn is_wisdom(&self) -> bool {
+        match self {
+            Provider::OpenAI { url, .. } => url.as_str().starts_with(Self::WISDOM_URL),
             Provider::Anthropic { .. } => false,
         }
     }
@@ -393,5 +408,25 @@ mod tests {
 
         let fixture_other = Provider::openai("key");
         assert!(!fixture_other.is_xai());
+    }
+
+    #[test]
+    fn test_wisdom() {
+        let fixture = "test_key";
+        let actual = Provider::wisdom(fixture);
+        let expected = Provider::OpenAI {
+            url: Url::from_str("https://wisdom-gate.juheapi.com/v1/").unwrap(),
+            key: Some(fixture.to_string()),
+        };
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_is_wisdom() {
+        let fixture_wisdom = Provider::wisdom("key");
+        assert!(fixture_wisdom.is_wisdom());
+
+        let fixture_other = Provider::openai("key");
+        assert!(!fixture_other.is_wisdom());
     }
 }

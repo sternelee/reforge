@@ -542,6 +542,8 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 "ChatGLM"
             } else if provider.is_moonshot() {
                 "Moonshot"
+            } else if provider.is_wisdom() {
+                "Wisdom"
             } else {
                 "Unknown"
             };
@@ -686,6 +688,11 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 "Moonshot AI provider".to_string(),
                 "MOONSHOT_API_KEY".to_string(),
             ),
+            CliProvider::new(
+                "Wisdom".to_string(),
+                "Wisdom AI provider".to_string(),
+                "WISDOM_API_KEY".to_string(),
+            ),
         ]
     }
 
@@ -720,6 +727,8 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 providers.iter().position(|p| p.name == "ChatGLM")
             } else if current_provider.is_moonshot() {
                 providers.iter().position(|p| p.name == "Moonshot")
+            } else if current_provider.is_wisdom() {
+                providers.iter().position(|p| p.name == "Wisdom")
             } else {
                 None
             }
