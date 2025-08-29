@@ -148,6 +148,13 @@ impl Provider {
         }
     }
 
+    pub fn iflow(key: &str) -> Provider {
+        Provider::OpenAI {
+            url: Url::parse(Provider::IFLOW_URL).unwrap(),
+            key: Some(key.into()),
+        }
+    }
+
     pub fn key(&self) -> Option<&str> {
         match self {
             Provider::OpenAI { key, .. } => key.as_deref(),
@@ -170,6 +177,7 @@ impl Provider {
     pub const QWEN_URL: &str = "https://dashscope.aliyuncs.com/compatible-mode/v1/";
     pub const CHATGLM_URL: &str = "https://open.bigmodel.cn/api/paas/v4/";
     pub const MOONSHOT_URL: &str = "https://api.moonshot.cn/v1/";
+    pub const IFLOW_URL: &str = "https://apis.iflow.cn/v1/";
 
     /// Converts the provider to it's base URL
     pub fn to_base_url(&self) -> Url {
@@ -266,6 +274,13 @@ impl Provider {
     pub fn is_moonshot(&self) -> bool {
         match self {
             Provider::OpenAI { url, .. } => url.as_str().starts_with(Self::MOONSHOT_URL),
+            Provider::Anthropic { .. } => false,
+        }
+    }
+
+    pub fn is_iflow(&self) -> bool {
+        match self {
+            Provider::OpenAI { url, .. } => url.as_str().starts_with(Self::IFLOW_URL),
             Provider::Anthropic { .. } => false,
         }
     }

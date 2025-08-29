@@ -44,11 +44,13 @@ impl Transformer for ProviderPipeline<'_> {
 fn supports_open_router_params(provider: &Provider) -> bool {
     provider.is_open_router()
         || provider.is_forge()
+        || provider.is_cerebras()
         || provider.is_vercel()
         || provider.is_deepseek()
         || provider.is_qwen()
         || provider.is_chatglm()
         || provider.is_moonshot()
+        || provider.is_iflow()
 }
 
 #[cfg(test)]

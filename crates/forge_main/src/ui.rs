@@ -528,6 +528,8 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 "OpenRouter"
             } else if provider.is_requesty() {
                 "Requesty"
+            } else if provider.is_cerebras() {
+                "Cerebras"
             } else if provider.is_xai() {
                 "xAI"
             } else if provider.is_zai() {
@@ -542,6 +544,8 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 "ChatGLM"
             } else if provider.is_moonshot() {
                 "Moonshot"
+            } else if provider.is_iflow() {
+                "iFlow"
             } else {
                 "Unknown"
             };
@@ -642,6 +646,11 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 "ANTHROPIC_API_KEY".to_string(),
             ),
             CliProvider::new(
+                "Cerebras".to_string(),
+                "Cerebras provider".to_string(),
+                "CEREBRAS_API_KEY".to_string(),
+            ),
+            CliProvider::new(
                 "OpenRouter".to_string(),
                 "OpenRouter proxy service".to_string(),
                 "OPENROUTER_API_KEY".to_string(),
@@ -686,6 +695,11 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 "Moonshot AI provider".to_string(),
                 "MOONSHOT_API_KEY".to_string(),
             ),
+            CliProvider::new(
+                "iFlow".to_string(),
+                "iFlow AI provider".to_string(),
+                "IFLOW_API_KEY".to_string(),
+            ),
         ]
     }
 
@@ -720,6 +734,8 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 providers.iter().position(|p| p.name == "ChatGLM")
             } else if current_provider.is_moonshot() {
                 providers.iter().position(|p| p.name == "Moonshot")
+            } else if current_provider.is_iflow() {
+                providers.iter().position(|p| p.name == "iFlow")
             } else {
                 None
             }

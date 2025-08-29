@@ -107,7 +107,7 @@ fn resolve_env_provider<F: EnvironmentInfra>(
     }
 
     // Fall back to the original behavior when no specific provider is requested
-    let keys: [ProviderSearch; 12] = [
+    let keys: [ProviderSearch; 13] = [
         // ("FORGE_KEY", Box::new(Provider::forge)),
         ("OPENROUTER_API_KEY", Box::new(Provider::open_router)),
         ("REQUESTY_API_KEY", Box::new(Provider::requesty)),
@@ -121,6 +121,7 @@ fn resolve_env_provider<F: EnvironmentInfra>(
         ("DASHSCOPE_API_KEY", Box::new(Provider::qwen)),
         ("CHATGLM_API_KEY", Box::new(Provider::chatglm)),
         ("MOONSHOT_API_KEY", Box::new(Provider::moonshot)),
+        ("IFLOW_API_KEY", Box::new(Provider::iflow)),
     ];
 
     keys.into_iter().find_map(|(key, fun)| {
