@@ -51,7 +51,7 @@ impl<F: EnvironmentInfra> ProviderRegistry for ForgeProviderRegistry<F> {
 
         let provider = self
             .get_provider(config)
-            .context("No valid provider configuration found. Please set one of the following environment variables: OPENROUTER_API_KEY, REQUESTY_API_KEY, XAI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, ZAI_API_KEY, VERCEL_API_KEY, DEEPSEEK_API_KEY, DASHSCOPE_API_KEY, CHATGLM_API_KEY, or MOONSHOT_API_KEY. For more details, visit: https://forgecode.dev/docs/custom-providers/")?;
+            .context("No valid provider configuration found. Please set one of the following environment variables: OPENROUTER_API_KEY, REQUESTY_API_KEY, XAI_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, ZAI_API_KEY, VERCEL_API_KEY, DEEPSEEK_API_KEY, DASHSCOPE_API_KEY, CHATGLM_API_KEY, MOONSHOT_API_KEY, or IFLOW_API_KEY. For more details, visit: https://forgecode.dev/docs/custom-providers/")?;
         self.cache.write().await.replace(provider.clone());
         Ok(provider)
     }
@@ -87,6 +87,7 @@ fn resolve_env_provider<F: EnvironmentInfra>(
             ("QWEN", "DASHSCOPE_API_KEY", Box::new(Provider::qwen)),
             ("CHATGLM", "CHATGLM_API_KEY", Box::new(Provider::chatglm)),
             ("MOONSHOT", "MOONSHOT_API_KEY", Box::new(Provider::moonshot)),
+            ("IFLOW", "IFLOW_API_KEY", Box::new(Provider::iflow)),
         ];
 
         // Try to find the requested provider
