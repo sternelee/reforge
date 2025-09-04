@@ -1,5 +1,5 @@
 <system_information>
-{{> forge-partial-system-info.hbs }}
+{{> forge-partial-system-info.md }}
 </system_information>
 
 {{#if (not tool_supported)}}
@@ -7,7 +7,7 @@
 {{tool_information}}</available_tools>
 
 <tool_usage_example>
-{{> forge-partial-tool-use-example.hbs }}
+{{> forge-partial-tool-use-example.md }}
 </tool_usage_example>
 {{/if}}
 
@@ -32,7 +32,7 @@
 {{/if}}
 
 <non_negotiable_rules>
-- You must always cite or reference any part of code using this exact format: `filepath:startLine`. Do not use any other format, even for ranges.
+- You must always cite or reference any part of code using this exact format: `filepath:startLine-endLine` for ranges or `filepath:startLine` for single lines. Do not use any other format.
 - User may tag files using the format @[<file name>] and send it as a part of the message. Do not attempt to reread those files.
 {{#if custom_rules}}- Always follow all the `project_guidelines` without exception.{{/if}}
 </non_negotiable_rules>
