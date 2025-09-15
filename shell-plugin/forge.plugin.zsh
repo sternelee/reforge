@@ -1,12 +1,12 @@
 #!/usr/bin/env zsh
 
 # Forge ZSH Plugin - ZLE Widget Version
-# Converts '# abc' to '$_FORGE_CMD <<< abc' using ZLE widgets
+# Converts '# abc' to '$_FORGE_BIN <<< abc' using ZLE widgets
 # Now with @ tab completion support
 
 # Configuration: Change these variables to customize the forge command and special characters
 # Using typeset to keep variables local to plugin scope and prevent public exposure
-typeset -h _FORGE_CMD="target/debug/forge"
+typeset -h _FORGE_BIN="${FORGE_BIN:-forge}"
 typeset -h _FORGE_OLD_CONVERSATION_PATTERN="#\!"
 typeset -h _FORGE_NEW_CONVERSATION_PATTERN="#\?"
 
@@ -22,7 +22,7 @@ function _forge_transform_buffer() {
     if [[ "$BUFFER" =~ "^${_FORGE_OLD_CONVERSATION_PATTERN} (.*)$" ]]; then
         # Use existing conversation ID with --resume
         if [[ -n "$_FORGE_CONVERSATION_ID" ]]; then
-            forge_cmd="$_FORGE_CMD --resume $_FORGE_CONVERSATION_ID"
+            forge_cmd="$_FORGE_BIN --resume $_FORGE_CONVERSATION_ID"
             input_text="${match[1]}"
         else
             echo "No conversation ID found. Start a new conversation with '#?'"
@@ -31,8 +31,8 @@ function _forge_transform_buffer() {
     # Check if the line starts with new conversation character (default: '? ')
     elif [[ "$BUFFER" =~ "^${_FORGE_NEW_CONVERSATION_PATTERN} (.*)$" ]]; then
         # Generate new conversation ID first
-        _FORGE_CONVERSATION_ID=$($_FORGE_CMD --generate-conversation-id)
-        forge_cmd="$_FORGE_CMD --resume $_FORGE_CONVERSATION_ID"
+        _FORGE_CONVERSATION_ID=$($_FORGE_BIN --generate-conversation-id)
+        forge_cmd="$_FORGE_BIN --resume $_FORGE_CONVERSATION_ID"
         input_text="${match[1]}"
     else
         return 1  # No transformation needed
