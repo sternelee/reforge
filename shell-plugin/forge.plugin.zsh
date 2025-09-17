@@ -139,8 +139,8 @@ zle -N forge-at-completion
 bindkey '^M' forge-accept-line
 bindkey '^J' forge-accept-line
 
-# Bind CTRL+I to insert conversation pattern
-bindkey '^I' forge-insert-pattern
+# Bind CTRL+G to insert/toggle conversation pattern  
+bindkey '^G' forge-insert-pattern
 
 # Bind Tab to our custom @ completion widget  
 bindkey '^[[Z' forge-at-completion  # Shift+Tab for @ completion
