@@ -51,6 +51,8 @@ fn supports_open_router_params(provider: &Provider) -> bool {
         || provider.is_chatglm()
         || provider.is_moonshot()
         || provider.is_iflow()
+        || provider.is_zai()
+        || provider.is_zai_coding()
 }
 
 #[cfg(test)]
