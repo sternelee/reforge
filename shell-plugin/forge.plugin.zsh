@@ -30,10 +30,7 @@ function _forge_fzf() {
 
 # Store conversation ID in a temporary variable (local to plugin)
 export FORGE_CONVERSATION_ID=""
-export FORGE_ACTIVE_AGENT=""
-
-# Store the last command for reuse
-typeset -h _FORGE_USER_ACTION=""
+export FORGE_ACTIVE_AGENT="forge"
 
 # Custom completion widget that handles both :commands and @ completion
 function forge-completion() {
@@ -129,15 +126,12 @@ function forge-accept-line() {
         fi
         
         FORGE_CONVERSATION_ID=""
-        _FORGE_USER_ACTION=""
+        FORGE_ACTIVE_AGENT="forge"
         BUFFER=""
         CURSOR=${#BUFFER}
         zle reset-prompt
         return 0
     fi
-    
-    # Store the action for potential reuse
-    _FORGE_USER_ACTION="$user_action"
     
     # Generate conversation ID if needed (in parent shell context)
     if [[ -z "$FORGE_CONVERSATION_ID" ]]; then
@@ -145,7 +139,7 @@ function forge-accept-line() {
     fi
     
     # Set the active agent for this execution
-    FORGE_ACTIVE_AGENT="${user_action:-${FORGE_ACTIVE_AGENT:-forge}}"
+    FORGE_ACTIVE_AGENT="${user_action:-${FORGE_ACTIVE_AGENT}}"
     
     # Build and execute the forge command
     local forge_cmd="$_FORGE_BIN"
