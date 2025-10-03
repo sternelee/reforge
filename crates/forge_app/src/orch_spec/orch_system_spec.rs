@@ -6,7 +6,7 @@ use crate::orch_spec::orch_runner::TestContext;
 #[tokio::test]
 async fn test_system_prompt() {
     let mut ctx = TestContext::default()
-        .workflow(Workflow::default())
+        .workflow(Workflow::default().tool_supported(false))
         .mock_assistant_responses(vec![ChatCompletionMessage::assistant(Content::full(
             "Sure",
         ))]);
