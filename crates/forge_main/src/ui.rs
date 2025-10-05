@@ -13,6 +13,7 @@ use forge_app::utils::truncate_key;
 use forge_display::MarkdownFormat;
 use forge_domain::{ChatResponseContent, McpConfig, McpServerConfig, Scope, TitleFormat};
 use forge_fs::ForgeFS;
+use forge_select::ForgeSelect;
 use forge_spinner::SpinnerManager;
 use forge_tracker::ToolCallPayload;
 use merge::Merge;
@@ -27,7 +28,6 @@ use crate::info::Info;
 use crate::input::Console;
 use crate::model::{CliModel, CliProvider, Command, ForgeCommandManager, PartialEvent};
 use crate::prompt::ForgePrompt;
-use crate::select::ForgeSelect;
 use crate::state::UIState;
 use crate::title_display::TitleDisplayExt;
 use crate::tools_display::format_tools;
@@ -722,7 +722,9 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
             return Ok(());
         }
 
-        if let Some(conversation) = ConversationSelector::select_conversation(&conversations)? {
+        if let Some(conversation) =
+            ConversationSelector::select_conversation(&conversations).await?
+        {
             self.state.conversation_id = Some(conversation.id);
         }
         Ok(())
