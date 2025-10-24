@@ -16,7 +16,7 @@ use crate::provider::{ForgeProviderRegistry, ForgeProviderService};
 use crate::template::ForgeTemplateService;
 use crate::tool_services::{
     ForgeFetch, ForgeFollowup, ForgeFsCreate, ForgeFsPatch, ForgeFsRead, ForgeFsRemove,
-    ForgeFsSearch, ForgeFsUndo, ForgePlanCreate, ForgeShell,
+    ForgeFsSearch, ForgeFsUndo, ForgeImageRead, ForgePlanCreate, ForgeShell,
 };
 use crate::workflow::ForgeWorkflowService;
 use crate::{
@@ -46,6 +46,7 @@ pub struct ForgeServices<F: HttpInfra + EnvironmentInfra + McpServerInfra + Walk
     file_create_service: Arc<ForgeFsCreate<F>>,
     plan_create_service: Arc<ForgePlanCreate<F>>,
     file_read_service: Arc<ForgeFsRead<F>>,
+    image_read_service: Arc<ForgeImageRead<F>>,
     file_search_service: Arc<ForgeFsSearch<F>>,
     file_remove_service: Arc<ForgeFsRemove<F>>,
     file_patch_service: Arc<ForgeFsPatch<F>>,
@@ -91,6 +92,7 @@ impl<
         let file_create_service = Arc::new(ForgeFsCreate::new(infra.clone()));
         let plan_create_service = Arc::new(ForgePlanCreate::new(infra.clone()));
         let file_read_service = Arc::new(ForgeFsRead::new(infra.clone()));
+        let image_read_service = Arc::new(ForgeImageRead::new(infra.clone()));
         let file_search_service = Arc::new(ForgeFsSearch::new(infra.clone()));
         let file_remove_service = Arc::new(ForgeFsRemove::new(infra.clone()));
         let file_patch_service = Arc::new(ForgeFsPatch::new(infra.clone()));
@@ -115,6 +117,7 @@ impl<
             file_create_service,
             plan_create_service,
             file_read_service,
+            image_read_service,
             file_search_service,
             file_remove_service,
             file_patch_service,
@@ -167,6 +170,7 @@ impl<
     type PlanCreateService = ForgePlanCreate<F>;
     type FsPatchService = ForgeFsPatch<F>;
     type FsReadService = ForgeFsRead<F>;
+    type ImageReadService = ForgeImageRead<F>;
     type FsRemoveService = ForgeFsRemove<F>;
     type FsSearchService = ForgeFsSearch<F>;
     type FollowUpService = ForgeFollowup<F>;
@@ -271,5 +275,8 @@ impl<
 
     fn policy_service(&self) -> &Self::PolicyService {
         &self.policy_service
+    }
+    fn image_read_service(&self) -> &Self::ImageReadService {
+        &self.image_read_service
     }
 }
