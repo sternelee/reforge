@@ -109,13 +109,7 @@ impl<A: API> ConfigManager<A> {
             .await
             .map(|m| m.as_str().to_string());
         let provider = self.api.get_provider().await.ok().map(|p| p.id.to_string());
-
-        let info = super::helpers::build_config_info(agent, model, provider);
-        if porcelain {
-            crate::cli_format::format_columns(info.to_rows(false));
-        } else {
-            println!("{}", info);
-        }
+        super::helpers::build_config_info(agent, model, provider, porcelain);
         Ok(())
     }
 
