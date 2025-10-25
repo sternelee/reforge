@@ -24,7 +24,7 @@ use tracing::debug;
 
 use crate::cli::{Cli, ExtensionCommand, ListCommand, McpCommand, SessionCommand, TopLevelCommand};
 use crate::conversation_selector::ConversationSelector;
-use crate::env::{get_agent_from_env, get_conversation_id_from_env};
+use crate::env::{get_agent_from_env, get_conversation_id_from_env, should_show_completion_prompt};
 use crate::info::Info;
 use crate::input::Console;
 use crate::model::{CliModel, CliProvider, Command, ForgeCommandManager, PartialEvent};
@@ -1523,6 +1523,10 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
     }
 
     async fn on_completion(&mut self, conversation_id: ConversationId) -> anyhow::Result<()> {
+        if !should_show_completion_prompt() {
+            return Ok(());
+        }
+
         self.spinner.start(Some("Loading Summary"))?;
         let conversation = self
             .api
@@ -1536,7 +1540,7 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
 
         self.spinner.stop(None)?;
 
-        // Only prompt for new conversation if in interactive mode
+        // Only prompt for new conversation if in interactive mode and prompt is enabled
         if self.cli.is_interactive() {
             let prompt_text = "Start a new conversation?";
             let should_start_new_chat = ForgeSelect::confirm(prompt_text)
