@@ -7,12 +7,12 @@ use colored::Colorize;
 use convert_case::{Case, Casing};
 use forge_api::{
     API, AgentId, ChatRequest, ChatResponse, Conversation, ConversationId, Event,
-    InterruptionReason, Model, ModelId, Provider, ProviderId, Workflow,
+    InterruptionReason, Model, ModelId, Provider, ProviderId, TextMessage, Workflow,
 };
 use forge_app::ToolResolver;
 use forge_app::utils::truncate_key;
 use forge_display::MarkdownFormat;
-use forge_domain::{ChatResponseContent, TitleFormat};
+use forge_domain::{ChatResponseContent, ContextMessage, Role, TitleFormat};
 use forge_fs::ForgeFS;
 use forge_select::ForgeSelect;
 use forge_spinner::SpinnerManager;
@@ -24,7 +24,7 @@ use tracing::debug;
 
 use crate::cli::{Cli, ExtensionCommand, ListCommand, McpCommand, SessionCommand, TopLevelCommand};
 use crate::conversation_selector::ConversationSelector;
-use crate::env::{get_agent_from_env, get_conversation_id_from_env, should_show_completion_prompt};
+use crate::env::should_show_completion_prompt;
 use crate::info::Info;
 use crate::input::Console;
 use crate::model::{CliModel, CliProvider, Command, ForgeCommandManager, PartialEvent};
@@ -84,6 +84,7 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
 
         // Reset previously set CLI parameters by the user
         self.cli.conversation = None;
+        self.cli.conversation_id = None;
 
         self.display_banner()?;
         self.trace_user();
@@ -362,7 +363,7 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 // Make sure to init model
                 self.on_new().await?;
 
-                self.on_info(porcelain).await?;
+                self.on_info(porcelain, None).await?;
                 return Ok(());
             }
             TopLevelCommand::Banner => {
@@ -447,6 +448,23 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 self.state.conversation_id = Some(conversation_id);
                 self.writeln_title(TitleFormat::info(format!("Resumed conversation: {}", id)))?;
                 // Interactive mode will be handled by the main loop
+            }
+            SessionCommand::Show { id } => {
+                let conversation_id = ConversationId::parse(&id)
+                    .context(format!("Invalid conversation ID: {}", id))?;
+
+                self.validate_session_exists(&conversation_id).await?;
+
+                self.on_show_last_message(&conversation_id).await?;
+            }
+            SessionCommand::Info { id } => {
+                let conversation_id = ConversationId::parse(&id)
+                    .context(format!("Invalid conversation ID: {}", id))?;
+
+                self.validate_session_exists(&conversation_id).await?;
+
+                self.on_info(session_group.porcelain, Some(conversation_id))
+                    .await?;
             }
         }
 
@@ -581,18 +599,13 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
         }
 
         if porcelain {
-            self.writeln(
-                Porcelain::from(&info)
-                    .skip(1)
-                    .drop_col(0)
-                    .map_col(2, |col| {
-                        if col == Some("Supported".to_owned()) {
-                            Some("🛠️".into())
-                        } else {
-                            None
-                        }
-                    }),
-            )?;
+            self.writeln(Porcelain::from(&info).skip(1).map_col(3, |col| {
+                if col == Some("Supported".to_owned()) {
+                    Some("🛠️".into())
+                } else {
+                    None
+                }
+            }))?;
         } else {
             self.writeln(info)?;
         }
@@ -738,13 +751,16 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
         Ok(())
     }
 
-    async fn on_info(&mut self, porcelain: bool) -> anyhow::Result<()> {
+    async fn on_info(
+        &mut self,
+        porcelain: bool,
+        conversation_id: Option<ConversationId>,
+    ) -> anyhow::Result<()> {
         let mut info = Info::from(&self.api.environment());
 
-        // Fetch conversation if ID is available
-        let conversation_id = get_conversation_id_from_env().or(self.state.conversation_id);
+        // Fetch conversation
         let conversation = match conversation_id {
-            Some(id) => self.api.conversation(&id).await.ok().flatten(),
+            Some(conversation_id) => self.api.conversation(&conversation_id).await.ok().flatten(),
             None => None,
         };
 
@@ -818,7 +834,20 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
         if let Some(conversation) =
             ConversationSelector::select_conversation(&conversations).await?
         {
-            self.state.conversation_id = Some(conversation.id);
+            let conversation_id = conversation.id;
+            self.state.conversation_id = Some(conversation_id);
+
+            // Show conversation content
+            self.on_show_last_message(&conversation_id).await?;
+
+            // Print log about conversation switching
+            self.writeln_title(TitleFormat::info(format!(
+                "Switched to conversation {}",
+                conversation_id.into_string().bold()
+            )))?;
+
+            // Show conversation info
+            self.on_info(false, Some(conversation_id)).await?;
         }
         Ok(())
     }
@@ -854,14 +883,14 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
 
             // Add conversation: Title=<title>, Updated=<time_ago>, with ID as section title
             info = info
-                .add_title(title.to_string())
-                .add_key_value("Updated", time_ago)
-                .add_key_value("Id", conv.id);
+                .add_title(conv.id)
+                .add_key_value("Title", title.to_string())
+                .add_key_value("Updated", time_ago);
         }
 
         // In porcelain mode, skip the top-level "SESSIONS" title
         if porcelain {
-            let porcelain = Porcelain::from(&info).skip(2).truncate(0, 60);
+            let porcelain = Porcelain::from(&info).skip(2).drop_col(3).truncate(1, 60);
             self.writeln(porcelain)?;
         } else {
             self.writeln(info)?;
@@ -887,7 +916,7 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                 self.on_new().await?;
             }
             Command::Info => {
-                self.on_info(false).await?;
+                self.on_info(false, None).await?;
             }
             Command::Usage => {
                 self.on_usage().await?;
@@ -1182,6 +1211,11 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
         let id = if self.cli.is_interactive() {
             self.init_conversation_interactive(&mut is_new).await?
         } else {
+            // Used via ZSH
+            if let Some(agent_id) = self.cli.agent_id.clone() {
+                self.api.set_operating_agent(AgentId::new(agent_id)).await?;
+            }
+
             self.init_conversation_headless(&mut is_new).await?
         };
 
@@ -1201,6 +1235,17 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
         is_new: &mut bool,
     ) -> Result<ConversationId, anyhow::Error> {
         Ok(if let Some(id) = self.state.conversation_id {
+            id
+        } else if let Some(ref id_str) = self.cli.conversation_id {
+            // Parse and use the provided conversation ID
+            let id = ConversationId::parse(id_str).context("Failed to parse conversation ID")?;
+
+            // Check if conversation exists, if not create it
+            if self.api.conversation(&id).await?.is_none() {
+                let conversation = Conversation::new(id);
+                self.api.upsert_conversation(conversation).await?;
+                *is_new = true;
+            }
             id
         } else if let Some(ref path) = self.cli.conversation {
             let conversation: Conversation =
@@ -1224,28 +1269,23 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
     ) -> Result<ConversationId, anyhow::Error> {
         Ok(if let Some(id) = self.state.conversation_id {
             id
-        } else {
-            if let Some(agent_id) = get_agent_from_env() {
-                self.api.set_operating_agent(agent_id).await?;
-            }
-            if let Some(id) = get_conversation_id_from_env() {
-                match self.api.conversation(&id).await? {
-                    Some(conversation) => conversation.id,
-                    None => {
-                        let conversation = Conversation::new(id);
-                        let id = conversation.id;
-                        self.api.upsert_conversation(conversation).await?;
-                        *is_new = true;
-                        id
-                    }
-                }
-            } else {
-                let conversation = Conversation::generate();
-                let id = conversation.id;
+        } else if let Some(ref id_str) = self.cli.conversation_id {
+            // Parse and use the provided conversation ID
+            let id = ConversationId::parse(id_str).context("Failed to parse conversation ID")?;
+
+            // Check if conversation exists, if not create it
+            if self.api.conversation(&id).await?.is_none() {
+                let conversation = Conversation::new(id);
                 self.api.upsert_conversation(conversation).await?;
                 *is_new = true;
-                id
             }
+            id
+        } else {
+            let conversation = Conversation::generate();
+            let id = conversation.id;
+            self.api.upsert_conversation(conversation).await?;
+            *is_new = true;
+            id
         })
     }
 
@@ -1785,6 +1825,39 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
                     .join(", ")
             ))
         }
+    }
+
+    /// Shows the last message from a conversation
+    ///
+    /// # Errors
+    /// - If the conversation doesn't exist
+    /// - If the conversation has no messages
+    async fn on_show_last_message(&mut self, conversation_id: &ConversationId) -> Result<()> {
+        let conversation = self
+            .api
+            .conversation(conversation_id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("Conversation not found"))?;
+
+        let context = conversation
+            .context
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Conversation has no context"))?;
+
+        // Find the last assistant message
+        let message = context.messages.iter().rev().find_map(|msg| match msg {
+            ContextMessage::Text(TextMessage { content, role: Role::Assistant, .. }) => {
+                Some(content)
+            }
+            _ => None,
+        });
+
+        // Format and display the message using the message_display module
+        if let Some(message) = message {
+            self.writeln(self.markdown.render(message))?;
+        }
+
+        Ok(())
     }
 }
 
