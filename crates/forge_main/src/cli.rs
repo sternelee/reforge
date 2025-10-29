@@ -52,6 +52,10 @@ pub struct Cli {
     #[arg(long, default_value_t = false, short = 'r')]
     pub restricted: bool,
 
+    /// Agent ID to use for this session
+    #[arg(long, alias = "aid")]
+    pub agent: Option<AgentId>,
+
     /// Top-level subcommands
     #[command(subcommand)]
     pub subcommands: Option<TopLevelCommand>,
@@ -294,7 +298,6 @@ pub struct ConfigSetArgs {
 
 #[derive(clap::ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConfigField {
-    Agent,
     Model,
     Provider,
 }
@@ -388,22 +391,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_config_set_with_agent() {
-        let fixture = Cli::parse_from(["forge", "config", "set", "agent", "muse"]);
-        let actual = match fixture.subcommands {
-            Some(TopLevelCommand::Config(config)) => match config.command {
-                ConfigCommand::Set(args) if args.field == ConfigField::Agent => {
-                    Some(args.value.clone())
-                }
-                _ => None,
-            },
-            _ => None,
-        };
-        let expected = Some("muse".to_string());
-        assert_eq!(actual, expected);
-    }
-
-    #[test]
     fn test_config_set_with_model() {
         let fixture = Cli::parse_from([
             "forge",
@@ -476,6 +463,31 @@ mod tests {
             _ => false,
         };
         assert_eq!(is_list, true);
+    }
+
+    #[test]
+    fn test_agent_id_long_flag() {
+        let fixture = Cli::parse_from(["forge", "--agent", "sage"]);
+        assert_eq!(fixture.agent, Some(AgentId::new("sage")));
+    }
+
+    #[test]
+    fn test_agent_id_short_alias() {
+        let fixture = Cli::parse_from(["forge", "--aid", "muse"]);
+        assert_eq!(fixture.agent, Some(AgentId::new("muse")));
+    }
+
+    #[test]
+    fn test_agent_id_with_prompt() {
+        let fixture = Cli::parse_from(["forge", "--agent", "forge", "-p", "test prompt"]);
+        assert_eq!(fixture.agent, Some(AgentId::new("forge")));
+        assert_eq!(fixture.prompt, Some("test prompt".to_string()));
+    }
+
+    #[test]
+    fn test_agent_id_not_provided() {
+        let fixture = Cli::parse_from(["forge"]);
+        assert_eq!(fixture.agent, None);
     }
 
     #[test]
