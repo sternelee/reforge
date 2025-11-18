@@ -1984,6 +1984,8 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
         // Run the independent initialization tasks in parallel for better performance
         let workflow = self.api.read_workflow(self.cli.workflow.as_deref()).await?;
 
+        let _ = self.handle_migrate_credentials().await;
+
         // Ensure we have a model selected before proceeding with initialization
         if self
             .get_agent_model(self.api.get_active_agent().await)
@@ -2516,6 +2518,31 @@ impl<A: API + 'static, F: Fn() -> A> UI<A, F> {
             self.writeln(self.markdown.render(message))?;
         }
 
+        Ok(())
+    }
+
+    /// Handle credential migration
+    async fn handle_migrate_credentials(&mut self) -> Result<()> {
+        // Perform the migration
+        self.spinner.start(Some("Migrating credentials"))?;
+        let result = self.api.migrate_env_credentials().await?;
+        self.spinner.stop(None)?;
+
+        // Display results based on whether migration occurred
+        if let Some(result) = result {
+            self.writeln_title(
+                TitleFormat::warning("Forge no longer reads API keys from environment variables.")
+                    .sub_title("Learn more: https://forgecode.dev/docs/custom-providers/"),
+            )?;
+
+            let count = result.migrated_providers.len();
+            let message = if count == 1 {
+                "Migrated 1 provider from environment variables".to_string()
+            } else {
+                format!("Migrated {} providers from environment variables", count)
+            };
+            self.writeln_title(TitleFormat::info(message))?;
+        }
         Ok(())
     }
 }
