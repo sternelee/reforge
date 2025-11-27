@@ -23,7 +23,6 @@ use forge_select::ForgeSelect;
 use forge_spinner::SpinnerManager;
 use forge_tracker::ToolCallPayload;
 use merge::Merge;
-use strum::IntoEnumIterator;
 use tokio_stream::StreamExt;
 use tracing::debug;
 use url::Url;
@@ -913,7 +912,8 @@ impl<A: API + 'static, F: Fn() -> A + Send + Sync> UI<A, F> {
         let mut info = Info::new();
 
         for provider in providers.iter() {
-            let id = provider.id().to_string();
+            let id: &str = &provider.id();
+            let display_name = provider.id().to_string();
             let domain = if let Some(url) = provider.url() {
                 url.domain().map(|d| d.to_string()).unwrap_or_default()
             } else {
@@ -922,6 +922,7 @@ impl<A: API + 'static, F: Fn() -> A + Send + Sync> UI<A, F> {
             let configured = provider.is_configured();
             info = info
                 .add_title(id.to_case(Case::UpperSnake))
+                .add_key_value("name", display_name)
                 .add_key_value("id", id)
                 .add_key_value("host", domain);
             if configured {
@@ -1905,7 +1906,10 @@ impl<A: API + 'static, F: Fn() -> A + Send + Sync> UI<A, F> {
         auth_methods: Vec<AuthMethod>,
     ) -> Result<Option<Provider<Url>>> {
         // Select auth method (or use the only one available)
-        let auth_method = match self.select_auth_method(provider_id, &auth_methods).await? {
+        let auth_method = match self
+            .select_auth_method(provider_id.clone(), &auth_methods)
+            .await?
+        {
             Some(method) => method,
             None => return Ok(None), // User cancelled
         };
@@ -1915,23 +1919,25 @@ impl<A: API + 'static, F: Fn() -> A + Send + Sync> UI<A, F> {
         // Initiate the authentication flow
         let auth_request = self
             .api
-            .init_provider_auth(provider_id, auth_method)
+            .init_provider_auth(provider_id.clone(), auth_method)
             .await?;
 
         // Handle the specific authentication flow based on the request type
         match auth_request {
             AuthContextRequest::ApiKey(request) => {
-                self.handle_api_key_input(provider_id, &request).await?;
+                self.handle_api_key_input(provider_id.clone(), &request)
+                    .await?;
             }
             AuthContextRequest::DeviceCode(request) => {
-                self.handle_device_flow(provider_id, &request).await?;
+                self.handle_device_flow(provider_id.clone(), &request)
+                    .await?;
             }
             AuthContextRequest::Code(request) => {
-                self.handle_code_flow(provider_id, &request).await?;
+                self.handle_code_flow(provider_id.clone(), &request).await?;
             }
         }
 
-        let should_set_active = self.display_credential_success(provider_id).await?;
+        let should_set_active = self.display_credential_success(provider_id.clone()).await?;
 
         if !should_set_active {
             return Ok(None);
@@ -2041,7 +2047,7 @@ impl<A: API + 'static, F: Fn() -> A + Send + Sync> UI<A, F> {
     /// a compatible model is selected.
     async fn finalize_provider_activation(&mut self, provider: Provider<Url>) -> Result<()> {
         // Set the provider via API
-        self.api.set_default_provider(provider.id).await?;
+        self.api.set_default_provider(provider.id.clone()).await?;
 
         self.writeln_title(TitleFormat::action(format!(
             "Switched to provider: {}",
@@ -2547,14 +2553,9 @@ impl<A: API + 'static, F: Fn() -> A + Send + Sync> UI<A, F> {
         // Set the specified field
         match args.field {
             ConfigField::Provider => {
-                // Parse and validate provider ID
-                let provider_id = ProviderId::from_str(&args.value).with_context(|| {
-                    format!(
-                        "Invalid provider: '{}'. Valid providers are: {}",
-                        args.value,
-                        get_valid_provider_names().join(", ")
-                    )
-                })?;
+                // Parse provider ID (any string is valid for custom providers)
+                let provider_id =
+                    ProviderId::from_str(&args.value).expect("from_str is infallible");
 
                 // Get the provider
                 let provider = self.api.get_provider(&provider_id).await?;
@@ -2680,9 +2681,4 @@ impl<A: API + 'static, F: Fn() -> A + Send + Sync> UI<A, F> {
         }
         Ok(())
     }
-}
-
-/// Get list of valid provider names
-fn get_valid_provider_names() -> Vec<String> {
-    ProviderId::iter().map(|p| p.to_string()).collect()
 }

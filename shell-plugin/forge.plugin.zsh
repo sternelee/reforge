@@ -128,14 +128,18 @@ function _forge_log() {
 
 # Helper function to find the index of a value in a list (1-based)
 # Returns the index if found, 1 otherwise
+# Usage: _forge_find_index <output> <value_to_find> [field_number]
+# field_number: which field to compare (1 for first field, 2 for second field, etc.)
 function _forge_find_index() {
     local output="$1"
     local value_to_find="$2"
+    local field_number="${3:-1}"  # Default to first field if not specified
 
     local index=1
     while IFS= read -r line; do
-        local name="${line%% *}"
-        if [[ "$name" == "$value_to_find" ]]; then
+        # Extract the specified field for comparison
+        local field_value=$(echo "$line" | awk "{print \$$field_number}")
+        if [[ "$field_value" == "$value_to_find" ]]; then
             echo "$index"
             return 0
         fi
@@ -174,11 +178,16 @@ function _forge_select_provider() {
         current_provider=$($_FORGE_BIN config get provider --porcelain 2>/dev/null)
     fi
     
-    local fzf_args=(--delimiter="$_FORGE_DELIMITER" --prompt="Provider ❯ ")
+    local fzf_args=(
+        --delimiter="$_FORGE_DELIMITER"
+        --prompt="Provider ❯ "
+        --with-nth=1,3..
+    )
     
     # Position cursor on current provider if available
     if [[ -n "$current_provider" ]]; then
-        local index=$(_forge_find_index "$output" "$current_provider")
+        # For providers, compare against the first field (display name)
+        local index=$(_forge_find_index "$output" "$current_provider" 1)
         fzf_args+=(--bind="start:pos($index)")
     fi
     
@@ -221,7 +230,8 @@ function _forge_select_and_set_config() {
             fi
 
             if [[ -n "$default_value" ]]; then
-                local index=$(_forge_find_index "$output" "$default_value")
+                # For models, compare against the first field (model_id)
+                local index=$(_forge_find_index "$output" "$default_value" 1)
                 
                 fzf_args+=(--bind="start:pos($index)")
                 
@@ -417,7 +427,8 @@ function _forge_action_conversation() {
 
         # If there's a current conversation, position cursor on it
         if [[ -n "$current_id" ]]; then
-            local index=$(_forge_find_index "$conversations_output" "$current_id")
+            # For conversations, compare against the first field (conversation_id)
+            local index=$(_forge_find_index "$conversations_output" "$current_id" 1)
             fzf_args+=(--bind="start:pos($index)")
         fi
 
@@ -531,9 +542,11 @@ function _forge_action_provider() {
     selected=$(_forge_select_provider)
     
     if [[ -n "$selected" ]]; then
-        local name="${selected%% *}"
+        # Extract the second field (provider ID) from the selected line
+        # Format: "DisplayName  provider_id  host  status"
+        local provider_id=$(echo "$selected" | awk '{print $2}')
         # Always use config set - it will handle authentication if needed
-        _forge_exec config set provider "$name"
+        _forge_exec config set provider "$provider_id"
     fi
     _forge_reset
 }
@@ -701,7 +714,8 @@ function _forge_action_login() {
     local selected
     selected=$(_forge_select_provider)
     if [[ -n "$selected" ]]; then
-        local provider="${selected%% *}"
+        # Extract the second field (provider ID)
+        local provider=$(echo "$selected" | awk '{print $2}')
         _forge_exec provider login "$provider"
     fi
     _forge_reset
@@ -713,7 +727,8 @@ function _forge_action_logout() {
     local selected
     selected=$(_forge_select_provider "available")
     if [[ -n "$selected" ]]; then
-        local provider="${selected%% *}"
+        # Extract the second field (provider ID)
+        local provider=$(echo "$selected" | awk '{print $2}')
         _forge_exec provider logout "$provider"
     fi
     _forge_reset
