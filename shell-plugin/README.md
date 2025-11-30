@@ -174,6 +174,32 @@ export FORGE_BIN="/path/to/custom/forge"
 - Internal pattern matching for conversation syntax (`:`)
 - New session command keyword: `:new` or `:n`
 
+### Codebase Indexing
+
+Manage semantic search indexes for your codebase:
+
+#### List Workspaces
+
+View all indexed workspaces:
+
+```bash
+:workspace
+```
+
+#### Sync Directory
+
+Index a directory for semantic search:
+
+```bash
+:sync
+# or 
+:index
+# or specify a path
+:sync /path/to/directory
+# or
+:index /path/to/directory
+```
+
 ### .forge Directory
 
 The plugin creates a `.forge` directory in your current working directory (similar to `.git`) for temporary files:
@@ -222,4 +248,16 @@ All transformed commands are properly saved to ZSH history, allowing you to:
 :info
 :new
 : New conversation starts here
+```
+
+
+### Codebase Indexing
+
+```bash
+# List all workspaces
+:workspace
+
+# Index current directory
+:sync
+:index
 ```
