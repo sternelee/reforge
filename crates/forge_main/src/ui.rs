@@ -2547,11 +2547,10 @@ impl<A: API + 'static, F: Fn() -> A + Send + Sync> UI<A, F> {
                 }
             }
             ChatResponse::TaskComplete => {
-                if let Some(conversation_id) = self.state.conversation_id
-                    && let Ok(conversation) =
-                        self.validate_conversation_exists(&conversation_id).await
-                {
-                    self.on_show_conv_info(conversation).await?;
+                if let Some(conversation_id) = self.state.conversation_id {
+                    self.writeln_title(
+                        TitleFormat::debug("Finished").sub_title(conversation_id.into_string()),
+                    )?;
                 }
             }
         }
@@ -2581,24 +2580,6 @@ impl<A: API + 'static, F: Fn() -> A + Send + Sync> UI<A, F> {
         let info = Info::default().extend(&conversation);
         self.writeln(info)?;
         self.spinner.stop(None)?;
-
-        // Only prompt for new conversation if in interactive mode and prompt is enabled
-        if self.cli.is_interactive() {
-            let prompt_text = "Start a new conversation?";
-            let should_start_new_chat = ForgeSelect::confirm(prompt_text)
-                // Pressing ENTER should start new
-                .with_default(true)
-                .with_help_message("ESC = No, continue current conversation")
-                .prompt()
-                // Cancel or failure should continue with the session
-                .unwrap_or(Some(false))
-                .unwrap_or(false);
-
-            // if conversation is over
-            if should_start_new_chat {
-                self.on_new().await?;
-            }
-        }
 
         Ok(())
     }
