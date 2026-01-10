@@ -40,7 +40,6 @@ use crate::{ToolCallArguments, ToolCallFull, ToolDefinition, ToolDescription, To
 pub enum ToolCatalog {
     #[serde(alias = "Read")]
     Read(FSRead),
-    ReadImage(ReadImage),
     #[serde(alias = "Write")]
     Write(FSWrite),
     FsSearch(FSSearch),
@@ -91,14 +90,6 @@ pub struct FSRead {
     /// will end at this line position.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub end_line: Option<i32>,
-}
-
-#[derive(Default, Debug, Clone, Serialize, Deserialize, JsonSchema, ToolDescription, PartialEq)]
-#[tool_description_file = "crates/forge_domain/src/tools/descriptions/read_image.md"]
-pub struct ReadImage {
-    /// The absolute path to the image file (e.g., /home/user/image.png).
-    /// Relative paths are not supported. The file must exist and be readable.
-    pub path: String,
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize, JsonSchema, ToolDescription, PartialEq)]
@@ -478,7 +469,6 @@ impl ToolDescription for ToolCatalog {
             ToolCatalog::FsSearch(v) => v.description(),
             ToolCatalog::SemSearch(v) => v.description(),
             ToolCatalog::Read(v) => v.description(),
-            ToolCatalog::ReadImage(v) => v.description(),
             ToolCatalog::Remove(v) => v.description(),
             ToolCatalog::Undo(v) => v.description(),
             ToolCatalog::Write(v) => v.description(),
@@ -525,7 +515,6 @@ impl ToolCatalog {
             ToolCatalog::FsSearch(_) => r#gen.into_root_schema_for::<FSSearch>(),
             ToolCatalog::SemSearch(_) => r#gen.into_root_schema_for::<SemanticSearch>(),
             ToolCatalog::Read(_) => r#gen.into_root_schema_for::<FSRead>(),
-            ToolCatalog::ReadImage(_) => r#gen.into_root_schema_for::<ReadImage>(),
             ToolCatalog::Remove(_) => r#gen.into_root_schema_for::<FSRemove>(),
             ToolCatalog::Undo(_) => r#gen.into_root_schema_for::<FSUndo>(),
             ToolCatalog::Write(_) => r#gen.into_root_schema_for::<FSWrite>(),
@@ -580,12 +569,6 @@ impl ToolCatalog {
                 cwd,
                 message: format!("Read file: {}", display_path_for(&input.path)),
             }),
-            ToolCatalog::ReadImage(input) => Some(crate::policies::PermissionOperation::Read {
-                path: std::path::PathBuf::from(&input.path),
-                cwd,
-                message: format!("Image file: {}", display_path_for(&input.path)),
-            }),
-
             ToolCatalog::Write(input) => Some(crate::policies::PermissionOperation::Write {
                 path: std::path::PathBuf::from(&input.path),
                 cwd,
@@ -648,11 +631,6 @@ impl ToolCatalog {
             path: path.to_string(),
             ..Default::default()
         }))
-    }
-
-    /// Creates a ReadImage tool call with the specified path
-    pub fn tool_call_read_image(path: &str) -> ToolCallFull {
-        ToolCallFull::from(ToolCatalog::ReadImage(ReadImage { path: path.to_string() }))
     }
 
     /// Creates a Write tool call with the specified path and content
