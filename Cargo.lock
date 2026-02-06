@@ -126,11 +126,12 @@ dependencies = [
 
 [[package]]
 name = "async-openai"
-version = "0.31.1"
+version = "0.32.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1cc4c602409022b854d89332fae01a6c69a4122fdd0ec66a071b9b5c3a87750b"
+checksum = "f4d91c2005832450ad9ac92411b9d4cec39e30be21adc76553efc47f812d59c7"
 dependencies = [
  "derive_builder",
+ "getrandom 0.3.4",
  "serde",
  "serde_json",
 ]
@@ -1770,6 +1771,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "backon",
+ "base64 0.22.1",
  "bytes",
  "cacache",
  "chrono",
@@ -1913,6 +1915,7 @@ dependencies = [
  "diesel",
  "diesel_migrations",
  "dirs",
+ "eventsource-stream",
  "fake",
  "forge_app",
  "forge_domain",
