@@ -197,25 +197,108 @@ pub enum OutputMode {
 /// corresponding use_case for document reranking.
 #[derive(Default, Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 pub struct SearchQuery {
-    /// Describe WHAT the code does or its purpose. Include domain-specific
-    /// terms and technical context. Good: "retry mechanism with exponential
-    /// backoff", "streaming responses from LLM API", "OAuth token refresh
-    /// flow". Bad: generic terms like "retry" or "auth" without context. Think
-    /// about the behavior and functionality you're looking for.
+    /// The semantic embedding query that describes WHAT the code does or its
+    /// purpose. This query is converted to a vector embedding and used to find
+    /// semantically similar code chunks in the vector database.
+    ///
+    /// **Guidelines for effective embedding queries:**
+    /// - Use specific, targeted technical terms and domain concepts
+    /// - Describe behavior, functionality, patterns, or implementation approach
+    /// - Include concrete keywords like technology names, algorithms, data
+    ///   structures
+    /// - Balance specificity (focused results) with generality (avoid missing
+    ///   relevant code)
+    /// - Keep queries focused - overly broad queries cause timeouts and poor
+    ///   results
+    /// - **Align keywords with intent**: For documentation, use "README",
+    ///   "guide", "setup"; for implementation, use "function", "logic",
+    ///   "handler"
+    ///
+    /// **Good examples:**
+    /// - "exponential backoff retry mechanism with configurable delays"
+    /// - "streaming LLM responses with SSE chunked transfer encoding"
+    /// - "OAuth2 token refresh with automatic retry and expiry check"
+    /// - "Diesel database migration runner with transaction support"
+    /// - "semantic search reranker using cross-encoder model"
+    /// - "README documentation configuration setup semantic search"
+    /// - "markdown guide API documentation tool definitions"
+    ///
+    /// **Bad examples:**
+    /// - "retry" (too generic, will match everything)
+    /// - "authentication" (overly broad - specify what aspect: login, tokens,
+    ///   middleware?)
+    /// - "tool definitions schemas" (too vague - be more specific about
+    ///   structure or location)
+    /// - "how system works" (meta-question, not searchable concept)
+    /// - "function that validates" (focus on what it validates, not that it's a
+    ///   function)
     pub query: String,
 
-    /// A short natural-language description of what you are trying to find.
-    /// This is the query used for document reranking. The query MUST:
-    /// - express a single, focused information need
-    /// - describe exactly what the agent is searching for
-    /// - should not be the query verbatim
-    /// - be concise (1–2 sentences)
+    /// The reranking query that describes your INTENT and WHY you need this
+    /// code. This query is used by the reranker model to filter and
+    /// prioritize the most relevant results from the initial embedding
+    /// search based on your specific use case.
     ///
-    /// Examples:
-    /// - "Why is `select_model()` returning a Pin<Box<Result>> in Rust?"
-    /// - "How to fix error E0277 for the ? operator on a pinned boxed result?"
-    /// - "Steps to run Diesel migrations in Rust without exposing the DB."
-    /// - "How to design a clean architecture service layer with typed errors?"
+    /// **Purpose:** While `query` casts a wide net for similar code, `use_case`
+    /// narrows it down by intent: implementation vs docs vs tests, reading
+    /// vs modifying code, understanding architecture vs finding bugs, etc.
+    ///
+    /// **Guidelines for effective reranking queries:**
+    /// - **MANDATORY FOR CODE**: ALWAYS include codebase construct keywords
+    ///   (struct, trait, impl, interface, class, function, fn, definition,
+    ///   implementation, declaration, type) when searching for code
+    /// - **WHY CRITICAL**: The reranker gives HIGH WEIGHTAGE to these keywords
+    ///   - "struct" → prioritizes struct definitions
+    ///   - "trait impl" → prioritizes trait implementations
+    ///   - "function" / "fn" → prioritizes function definitions
+    ///   - Without these, you get documentation instead of code!
+    /// - Clearly state your goal: understand, modify, debug, find examples,
+    ///   etc.
+    /// - Specify the TYPE of code you need: implementation, tests, docs,
+    ///   config, architecture
+    /// - Include WHY context: "to fix a bug", "to add a feature", "to
+    ///   understand flow"
+    /// - Be explicit about what to AVOID: "not tests", "not documentation",
+    ///   "not examples"
+    /// - **Match intent to file types**: documentation intent → avoid
+    ///   requesting "implementation code"; implementation intent → avoid
+    ///   requesting "documentation"
+    /// - Keep it concise (1-2 sentences) but informative
+    /// - MUST be different from the embedding query - add intent/context
+    ///
+    /// **Good examples (ALWAYS include construct keywords):**
+    /// - "I need the struct definition and trait implementation for Diesel
+    ///   migrations to understand the transaction handling, not setup docs"
+    /// - "Show me the function implementation for semantic search reranker so I
+    ///   can modify it to support file type filtering"
+    /// - "Find the type declarations and interface definitions for the tool
+    ///   registry, not the usage examples"
+    /// - "I'm debugging a timeout issue and need the function implementation
+    ///   that handles streaming responses, not the API documentation"
+    /// - "Show me the struct definitions and trait implementations for
+    ///   authentication, not the setup guide"
+    /// - "I need the impl block for workspace sync to understand how it detects
+    ///   file changes"
+    /// - "Find the fn definitions for embedding generation batching logic"
+    /// - "I need documentation explaining how to configure semantic search, not
+    ///   the implementation code"
+    /// - "Find the README or setup guide that explains the tool registration
+    ///   process, avoiding implementation details"
+    ///
+    /// **Bad examples (missing construct keywords = FAILS):**
+    /// - "I need code that handles authentication" ❌ MISSING:
+    ///   struct/trait/impl/function
+    /// - "Show me the database logic" ❌ MISSING: trait/impl/function keywords
+    /// - "I need the workspace sync implementation" ❌ MISSING: struct/impl/fn
+    ///   - too generic
+    /// - "Find the reranker code" ❌ MISSING: struct/trait/impl/function
+    /// - "exponential backoff retry mechanism" ❌ MISSING: WHY + construct
+    ///   keywords
+    /// - "find authentication code" ❌ MISSING: which construct? struct? trait?
+    ///   impl?
+    /// - "tool definitions" ❌ MISSING: struct? trait? type? be specific
+    /// - "how it works" (too vague - specify what you want to understand)
+    /// - Long rambling explanation without clear intent (keep it focused)
     pub use_case: String,
 }
 
