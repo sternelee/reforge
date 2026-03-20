@@ -169,8 +169,14 @@ function forge-accept-line() {
         config-provider|provider|p)
             _forge_action_provider "$input_text"
         ;;
-        config-model|model|m)
+        config-model|cm)
             _forge_action_model "$input_text"
+        ;;
+        model|m)
+            _forge_action_session_model "$input_text"
+        ;;
+        model-reset|mr)
+            _forge_action_model_reset
         ;;
         config-commit-model|ccm)
             _forge_action_commit_model "$input_text"
