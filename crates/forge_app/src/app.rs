@@ -69,9 +69,8 @@ impl<S: Services> ForgeApp<S> {
         // Get the conversation for the chat request
         let conversation = services
             .find_conversation(&chat.conversation_id)
-            .await
-            .unwrap_or_default()
-            .expect("conversation for the request should've been created at this point.");
+            .await?
+            .ok_or_else(|| forge_domain::Error::ConversationNotFound(chat.conversation_id))?;
 
         // Discover files using the discovery service
         let forge_config = self.config.clone();
