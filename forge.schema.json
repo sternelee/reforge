@@ -344,6 +344,11 @@
           "type": "null"
         }
       ]
+    },
+    "verify_todos": {
+      "description": "Enables the pending todos hook that checks for incomplete todo items\nwhen a task ends and reminds the LLM about them.",
+      "type": "boolean",
+      "default": false
     }
   },
   "$defs": {

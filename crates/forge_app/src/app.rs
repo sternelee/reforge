@@ -9,7 +9,10 @@ use forge_stream::MpscStream;
 use crate::apply_tunable_parameters::ApplyTunableParameters;
 use crate::changed_files::ChangedFiles;
 use crate::dto::ToolsOverview;
-use crate::hooks::{CompactionHandler, DoomLoopDetector, TitleGenerationHandler, TracingHandler};
+use crate::hooks::{
+    CompactionHandler, DoomLoopDetector, PendingTodosHandler, TitleGenerationHandler,
+    TracingHandler,
+};
 use crate::init_conversation_metrics::InitConversationMetrics;
 use crate::orch::Orchestrator;
 use crate::services::{AgentRegistry, CustomInstructionsService, ProviderAuthService};
@@ -142,8 +145,20 @@ impl<S: Services + EnvironmentInfra<Config = forge_config::ForgeConfig>> ForgeAp
         // Create the orchestrator with all necessary dependencies
         let tracing_handler = TracingHandler::new();
         let title_handler = TitleGenerationHandler::new(services.clone());
+
+        // Build the on_end hook, conditionally adding PendingTodosHandler based on
+        // config
+        let on_end_hook = if forge_config.verify_todos {
+            tracing_handler
+                .clone()
+                .and(title_handler.clone())
+                .and(PendingTodosHandler::new())
+        } else {
+            tracing_handler.clone().and(title_handler.clone())
+        };
+
         let hook = Hook::default()
-            .on_start(tracing_handler.clone().and(title_handler.clone()))
+            .on_start(tracing_handler.clone().and(title_handler))
             .on_request(tracing_handler.clone().and(DoomLoopDetector::default()))
             .on_response(
                 tracing_handler
@@ -151,8 +166,8 @@ impl<S: Services + EnvironmentInfra<Config = forge_config::ForgeConfig>> ForgeAp
                     .and(CompactionHandler::new(agent.clone(), environment.clone())),
             )
             .on_toolcall_start(tracing_handler.clone())
-            .on_toolcall_end(tracing_handler.clone())
-            .on_end(tracing_handler.and(title_handler));
+            .on_toolcall_end(tracing_handler)
+            .on_end(on_end_hook);
 
         let orch = Orchestrator::new(
             services.clone(),
