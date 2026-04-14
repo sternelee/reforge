@@ -1321,6 +1321,9 @@ impl<A: API + ConsoleWriter + 'static, F: Fn(ForgeConfig) -> A + Send + Sync> UI
 
     /// Lists all the commands
     async fn on_show_commands(&mut self, porcelain: bool) -> anyhow::Result<()> {
+        // Fetch custom commands once — used by both the porcelain and plain paths.
+        let custom_commands = self.api.get_commands().await?;
+
         if porcelain {
             // Build the full info with type/description columns for porcelain
             // (used by the shell plugin for tab completion).
@@ -1365,7 +1368,6 @@ impl<A: API + ConsoleWriter + 'static, F: Fn(ForgeConfig) -> A + Send + Sync> UI
                     .add_key_value("description", title);
             }
 
-            let custom_commands = self.api.get_commands().await?;
             for command in custom_commands {
                 info = info
                     .add_title(command.name.clone())
@@ -1390,6 +1392,7 @@ impl<A: API + ConsoleWriter + 'static, F: Fn(ForgeConfig) -> A + Send + Sync> UI
         } else {
             // Non-porcelain: render in the same flat format as :help in the REPL.
             let command_manager = ForgeCommandManager::default();
+            command_manager.register_all(custom_commands);
             let info = Info::from(&command_manager);
             self.writeln(info)?;
         }
