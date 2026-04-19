@@ -282,6 +282,13 @@ pub struct ForgeConfig {
     #[serde(default)]
     pub verify_todos: bool,
 
+    /// Whether the deep research agent is available.
+    ///
+    /// When set to `true`, the Sage agent is added to the agent list and
+    /// the `:sage` app command is enabled. Defaults to `false`.
+    #[serde(default)]
+    pub research_subagent: bool,
+
     /// Enables subagent support via the task tool; when true the forge agent
     /// gains access to the `task` tool for delegating work to specialised
     /// sub-agents, and the `sage` research-only agent tool is removed.
